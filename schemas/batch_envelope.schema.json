@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritaschain.org/schemas/vcp-supervision/batch_envelope.schema.json",
+  "title": "VCP Batch Envelope",
+  "description": "Schema for a batch of VCP events submitted to the Supervision Node for verification",
+  "schemaVersion": "1.0.0",
+  "vcpVersion": "1.1",
+  "type": "object",
+  "required": ["schema_version", "vcp_version", "batch_id", "submitter", "events", "merkle_root", "anchor"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this schema",
+      "const": "1.0.0"
+    },
+    "vcp_version": {
+      "type": "string",
+      "description": "VCP specification version",
+      "enum": ["1.0", "1.1"]
+    },
+    "policy_id": {
+      "type": "string",
+      "description": "Optional policy identifier for validation rules",
+      "examples": ["VSO-POLICY-SILVER-001", "VSO-POLICY-GOLD-001"]
+    },
+    "batch_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this batch (UUIDv7 recommended)"
+    },
+    "submitter": {
+      "type": "object",
+      "description": "Entity submitting the batch",
+      "required": ["entity_id", "entity_name"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "Unique identifier for the submitting entity"
+        },
+        "entity_name": {
+          "type": "string",
+          "description": "Human-readable name of the entity"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "description": "Primary regulatory jurisdiction",
+          "enum": ["EU", "UK", "US", "JP", "SG", "HK", "AU", "CA", "CH"]
+        }
+      }
+    },
+    "submission_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of batch submission"
+    },
+    "events": {
+      "type": "array",
+      "description": "Array of VCP events in this batch",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/VCPEvent"
+      }
+    },
+    "proofs": {
+      "type": "array",
+      "description": "Array of Merkle proofs corresponding to each event",
+      "items": {
+        "$ref": "#/$defs/MerkleProof"
+      }
+    },
+    "merkle_root": {
+      "type": "string",
+      "description": "Base64-encoded Merkle root for this batch",
+      "pattern": "^[A-Za-z0-9+/]+=*$"
+    },
+    "anchor": {
+      "$ref": "#/$defs/AnchorRecord"
+    },
+    "batch_metadata": {
+      "type": "object",
+      "description": "Optional metadata about the batch",
+      "properties": {
+        "sequence_start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "First sequence number in batch"
+        },
+        "sequence_end": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Last sequence number in batch"
+        },
+        "time_range_start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Earliest event timestamp in batch"
+        },
+        "time_range_end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Latest event timestamp in batch"
+        },
+        "algorithm_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of algorithm IDs present in batch"
+        }
+      }
+    },
+    "time_range": {
+      "type": "object",
+      "description": "Time range covered by this batch",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of time range (inclusive)"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of time range (inclusive)"
+        }
+      }
+    },
+    "envelope_signature": {
+      "type": "object",
+      "description": "Optional signature over the entire envelope",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "Ed25519"
+        },
+        "public_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "signed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signed_fields": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Fields included in signature",
+          "default": ["batch_id", "merkle_root", "anchor"]
+        }
+      },
+      "required": ["algorithm", "public_key", "value"]
+    }
+  },
+  "$defs": {
+    "VCPEvent": {
+      "type": "object",
+      "required": ["event_id", "timestamp", "sequence_num", "prev_hash", "event_type", "payload", "signature"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier (UUIDv7)"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp with microsecond precision"
+        },
+        "timestamp_precision": {
+          "type": "string",
+          "enum": ["NANOSECOND", "MICROSECOND", "MILLISECOND", "SECOND"],
+          "default": "MILLISECOND",
+          "description": "Precision of the timestamp"
+        },
+        "clock_sync_status": {
+          "type": "string",
+          "enum": ["PTP_LOCKED", "NTP_SYNCED", "BEST_EFFORT", "UNRELIABLE"],
+          "description": "Clock synchronization status at event time"
+        },
+        "sequence_num": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Monotonically increasing sequence number"
+        },
+        "prev_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$",
+          "description": "SHA-256 hash of previous event (hex, 64 chars)"
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Type of trading event",
+          "enum": [
+            "ALGO_STARTED", "ALGO_STOPPED", "ALGO_PAUSED", "ALGO_RESUMED",
+            "PARAM_CHANGED", "ORDER_NEW", "ORDER_MODIFIED", "ORDER_CANCELLED",
+            "FILL", "PARTIAL_FILL", "REJECTION", "RISK_BREACH", "MARKET_DATA",
+            "SYSTEM_EVENT", "HEARTBEAT"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "description": "Event-specific payload data"
+        },
+        "algorithm_id": {
+          "type": "string",
+          "description": "Identifier of the algorithm generating this event"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "Optional correlation ID for related events"
+        },
+        "signature": {
+          "$ref": "#/$defs/VCPSignature"
+        }
+      }
+    },
+    "VCPSignature": {
+      "type": "object",
+      "required": ["algorithm", "public_key", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "Ed25519",
+          "description": "Signature algorithm (Ed25519 per RFC 8032)"
+        },
+        "public_key": {
+          "type": "string",
+          "description": "Base64-encoded public key",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "value": {
+          "type": "string",
+          "description": "Base64-encoded signature value",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        }
+      }
+    },
+    "MerkleProof": {
+      "type": "object",
+      "required": ["leaf_index", "tree_size", "root_hash", "path", "directions"],
+      "properties": {
+        "leaf_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index of the leaf in the Merkle tree"
+        },
+        "tree_size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total number of leaves in the tree"
+        },
+        "root_hash": {
+          "type": "string",
+          "description": "Base64-encoded expected Merkle root",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9+/]+=*$"
+          },
+          "description": "Array of sibling hashes in the proof path"
+        },
+        "directions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["LEFT", "RIGHT"]
+          },
+          "description": "Direction of each sibling (LEFT or RIGHT)"
+        }
+      }
+    },
+    "AnchorRecord": {
+      "type": "object",
+      "required": ["anchor_type", "merkle_root", "anchor_timestamp"],
+      "properties": {
+        "anchor_type": {
+          "type": "string",
+          "enum": ["TSA", "BLOCKCHAIN", "DUAL"],
+          "description": "Type of external anchor"
+        },
+        "merkle_root": {
+          "type": "string",
+          "description": "Base64-encoded Merkle root being anchored",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "anchor_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when anchor was created"
+        },
+        "batch_start_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "First sequence number covered by anchor"
+        },
+        "batch_end_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Last sequence number covered by anchor"
+        },
+        "tsa_anchor": {
+          "$ref": "#/$defs/TSAAnchor"
+        },
+        "blockchain_anchor": {
+          "$ref": "#/$defs/BlockchainAnchor"
+        }
+      }
+    },
+    "TSAAnchor": {
+      "type": "object",
+      "required": ["tsa_url", "token", "timestamp"],
+      "properties": {
+        "tsa_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the Timestamp Authority"
+        },
+        "token": {
+          "type": "string",
+          "description": "Base64-encoded TSP response token (RFC 3161)",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp from the TSA"
+        },
+        "is_eidas_qualified": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the TSA is eIDAS qualified"
+        }
+      }
+    },
+    "BlockchainAnchor": {
+      "type": "object",
+      "required": ["chain", "network", "transaction_hash"],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "Blockchain name",
+          "enum": ["ethereum", "polygon", "bitcoin"]
+        },
+        "network": {
+          "type": "string",
+          "description": "Network identifier",
+          "enum": ["mainnet", "sepolia", "goerli", "testnet"]
+        },
+        "transaction_hash": {
+          "type": "string",
+          "description": "Transaction hash containing the anchor",
+          "pattern": "^0x[0-9a-fA-F]{64}$"
+        },
+        "block_number": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Block number of the transaction"
+        },
+        "block_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Block timestamp"
+        },
+        "merkle_root_in_tx": {
+          "type": "string",
+          "description": "Merkle root as recorded in transaction data",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "confirmations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of block confirmations"
+        }
+      }
+    }
+  }
+}

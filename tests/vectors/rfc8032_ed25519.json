@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RFC 8032 Ed25519 Test Vectors",
+  "description": "Test vectors for Ed25519 signature verification based on RFC 8032.",
+  "version": "1.0",
+  "source": "https://datatracker.ietf.org/doc/html/rfc8032",
+  "test_vectors": [
+    {
+      "name": "RFC 8032 Test Vector 1 - Empty message",
+      "description": "Ed25519 signature of empty message",
+      "secret_key_hex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+      "public_key_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "message_hex": "",
+      "signature_hex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+      "expected_result": "VALID"
+    },
+    {
+      "name": "RFC 8032 Test Vector 2 - Single byte message",
+      "description": "Ed25519 signature of single byte (0x72)",
+      "secret_key_hex": "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+      "public_key_hex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
+      "message_hex": "72",
+      "signature_hex": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
+      "expected_result": "VALID"
+    },
+    {
+      "name": "RFC 8032 Test Vector 3 - Two byte message",
+      "description": "Ed25519 signature of two bytes (0xaf82)",
+      "secret_key_hex": "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+      "public_key_hex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
+      "message_hex": "af82",
+      "signature_hex": "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a",
+      "expected_result": "VALID"
+    },
+    {
+      "name": "VCP Event Signature - Valid",
+      "description": "Example VCP event signature verification",
+      "message_description": "Canonical JSON of VCP event fields",
+      "message_hex": "7b226576656e745f6964223a2230313233343536372d383961622d636465662d303132332d343536373839616263646566222c2274696d657374616d70223a22323032362d30312d32365431323a30303a30302e3030303030305a227d",
+      "note": "In production, generate fresh key pair and sign actual VCP event",
+      "expected_result": "VALID"
+    },
+    {
+      "name": "Invalid Signature - Wrong public key",
+      "description": "Signature verified with wrong public key should fail",
+      "public_key_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "message_hex": "48656c6c6f",
+      "signature_hex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+      "expected_result": "INVALID",
+      "error_code": "SIG_INVALID"
+    },
+    {
+      "name": "Invalid Signature - Tampered message",
+      "description": "Original signature with modified message should fail",
+      "public_key_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "message_hex": "74616d7065726564",
+      "signature_hex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+      "expected_result": "INVALID",
+      "error_code": "SIG_INVALID"
+    },
+    {
+      "name": "Invalid Signature - Corrupted signature",
+      "description": "Corrupted signature bytes should fail",
+      "public_key_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "message_hex": "",
+      "signature_hex": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "expected_result": "INVALID",
+      "error_code": "SIG_INVALID"
+    },
+    {
+      "name": "Invalid Public Key Format",
+      "description": "Public key with wrong length should fail",
+      "public_key_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f70751",
+      "expected_result": "INVALID",
+      "error_code": "KEY_INVALID_FORMAT"
+    },
+    {
+      "name": "Invalid Signature Format",
+      "description": "Signature with wrong length should fail",
+      "signature_hex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a10",
+      "expected_result": "INVALID",
+      "error_code": "SIG_INVALID_FORMAT"
+    }
+  ],
+  "key_management_tests": [
+    {
+      "name": "Key in manifest",
+      "description": "Public key is authorized in manifest",
+      "public_key_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "manifest": {
+        "authorized_keys": {
+          "fingerprint_sha256": "abc123..."
+        }
+      },
+      "expected_result": "AUTHORIZED"
+    },
+    {
+      "name": "Key not in manifest",
+      "description": "Public key is not in manifest",
+      "public_key_hex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
+      "manifest": {
+        "authorized_keys": {}
+      },
+      "expected_result": "UNAUTHORIZED",
+      "error_code": "KEY_NOT_AUTHORIZED"
+    },
+    {
+      "name": "Revoked key",
+      "description": "Public key is revoked in manifest",
+      "manifest_entry": {
+        "revoked": true,
+        "revoked_at": "2026-01-01T00:00:00Z",
+        "revocation_reason": "Key compromise"
+      },
+      "expected_result": "UNAUTHORIZED",
+      "error_code": "KEY_REVOKED"
+    }
+  ],
+  "canonicalization": {
+    "description": "VCP uses canonical JSON for signature computation",
+    "rules": [
+      "Keys sorted alphabetically",
+      "No whitespace between elements",
+      "No trailing commas",
+      "UTF-8 encoding"
+    ],
+    "example": {
+      "input": {
+        "timestamp": "2026-01-26T12:00:00Z",
+        "event_id": "01234567-89ab-cdef-0123-456789abcdef"
+      },
+      "canonical": "{\"event_id\":\"01234567-89ab-cdef-0123-456789abcdef\",\"timestamp\":\"2026-01-26T12:00:00Z\"}"
+    }
+  },
+  "implementation_notes": [
+    "Use cryptography library (Ed25519PublicKey.verify) in Python",
+    "Always verify against the canonical JSON representation",
+    "Check key authorization before signature verification",
+    "Log signature verification failures for audit",
+    "Consider timing attacks - use constant-time comparison"
+  ]
+}

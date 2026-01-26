@@ -1,0 +1,132 @@
+{
+  "$comment": "Sample VCP batch envelope for PoC testing. NOT for production use.",
+  "schema_version": "1.0.0",
+  "vcp_version": "1.1",
+  "batch_id": "01945678-1234-7def-8901-234567890001",
+  "submitter": {
+    "entity_id": "FIRM-DEMO-001",
+    "entity_name": "Demo Trading Ltd",
+    "jurisdiction": "EU"
+  },
+  "submission_timestamp": "2026-01-26T12:00:00.000000Z",
+  "time_range": {
+    "start": "2026-01-26T11:00:00.000000Z",
+    "end": "2026-01-26T12:00:00.000000Z"
+  },
+  "events": [
+    {
+      "event_id": "01945678-1234-7aaa-8901-234567890001",
+      "timestamp": "2026-01-26T11:00:00.123456Z",
+      "timestamp_precision": "MICROSECOND",
+      "clock_sync_status": "PTP_LOCKED",
+      "sequence_num": 1,
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "event_type": "ALGO_STARTED",
+      "algorithm_id": "ALGO-DEMO-001",
+      "payload": {
+        "algorithm_name": "Demo Market Maker",
+        "version": "1.0.0",
+        "parameters": {
+          "max_position": 1000,
+          "spread_bps": 10
+        }
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key": "MCowBQYDK2VwAyEAd1qYAYKxCrfVS/7TyWQHOg7hcy86omIyWvAiaPhwURo=",
+        "value": "PLACEHOLDER_SIGNATURE_BASE64"
+      }
+    },
+    {
+      "event_id": "01945678-1234-7aaa-8901-234567890002",
+      "timestamp": "2026-01-26T11:00:01.234567Z",
+      "timestamp_precision": "MICROSECOND",
+      "clock_sync_status": "PTP_LOCKED",
+      "sequence_num": 2,
+      "prev_hash": "abc123def456789abc123def456789abc123def456789abc123def456789abc1",
+      "event_type": "ORDER_NEW",
+      "algorithm_id": "ALGO-DEMO-001",
+      "payload": {
+        "order_id": "ORD-001",
+        "symbol": "EURUSD",
+        "side": "BUY",
+        "quantity": 100000,
+        "price": 1.0850,
+        "order_type": "LIMIT"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key": "MCowBQYDK2VwAyEAd1qYAYKxCrfVS/7TyWQHOg7hcy86omIyWvAiaPhwURo=",
+        "value": "PLACEHOLDER_SIGNATURE_BASE64"
+      }
+    },
+    {
+      "event_id": "01945678-1234-7aaa-8901-234567890003",
+      "timestamp": "2026-01-26T11:00:02.345678Z",
+      "timestamp_precision": "MICROSECOND",
+      "clock_sync_status": "PTP_LOCKED",
+      "sequence_num": 3,
+      "prev_hash": "def456789abc123def456789abc123def456789abc123def456789abc123def4",
+      "event_type": "FILL",
+      "algorithm_id": "ALGO-DEMO-001",
+      "payload": {
+        "order_id": "ORD-001",
+        "fill_id": "FILL-001",
+        "symbol": "EURUSD",
+        "side": "BUY",
+        "quantity": 100000,
+        "price": 1.0850,
+        "counterparty": "LP-001"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key": "MCowBQYDK2VwAyEAd1qYAYKxCrfVS/7TyWQHOg7hcy86omIyWvAiaPhwURo=",
+        "value": "PLACEHOLDER_SIGNATURE_BASE64"
+      }
+    }
+  ],
+  "proofs": [
+    {
+      "leaf_index": 0,
+      "tree_size": 3,
+      "root_hash": "PLACEHOLDER_MERKLE_ROOT_BASE64",
+      "path": ["SIBLING_HASH_1", "SIBLING_HASH_2"],
+      "directions": ["RIGHT", "RIGHT"]
+    },
+    {
+      "leaf_index": 1,
+      "tree_size": 3,
+      "root_hash": "PLACEHOLDER_MERKLE_ROOT_BASE64",
+      "path": ["SIBLING_HASH_1", "SIBLING_HASH_2"],
+      "directions": ["LEFT", "RIGHT"]
+    },
+    {
+      "leaf_index": 2,
+      "tree_size": 3,
+      "root_hash": "PLACEHOLDER_MERKLE_ROOT_BASE64",
+      "path": ["SIBLING_HASH_1", "SIBLING_HASH_2"],
+      "directions": ["RIGHT", "LEFT"]
+    }
+  ],
+  "merkle_root": "PLACEHOLDER_MERKLE_ROOT_BASE64",
+  "anchor": {
+    "anchor_type": "TSA",
+    "merkle_root": "PLACEHOLDER_MERKLE_ROOT_BASE64",
+    "anchor_timestamp": "2026-01-26T12:00:05.000000Z",
+    "batch_start_seq": 1,
+    "batch_end_seq": 3,
+    "tsa_anchor": {
+      "tsa_url": "https://timestamp.digicert.com",
+      "token": "PLACEHOLDER_TSP_TOKEN_BASE64",
+      "timestamp": "2026-01-26T12:00:05.000000Z",
+      "is_eidas_qualified": false
+    }
+  },
+  "batch_metadata": {
+    "sequence_start": 1,
+    "sequence_end": 3,
+    "time_range_start": "2026-01-26T11:00:00.123456Z",
+    "time_range_end": "2026-01-26T11:00:02.345678Z",
+    "algorithm_ids": ["ALGO-DEMO-001"]
+  }
+}

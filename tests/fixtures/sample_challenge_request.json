@@ -1,0 +1,34 @@
+{
+  "$comment": "Sample challenge request fixture for PoC testing. NOT for production use.",
+  "schema_version": "1.0.0",
+  "vcp_version": "1.1",
+  "challenge_id": "01945678-9999-7def-8901-challenge0001",
+  "requester": {
+    "authority_id": "FCA-UK-001",
+    "authority_name": "Financial Conduct Authority",
+    "jurisdiction": "UK",
+    "officer_id": "OFFICER-001"
+  },
+  "target": {
+    "entity_id": "FIRM-DEMO-001",
+    "entity_name": "Demo Trading Ltd"
+  },
+  "challenge_type": "SINGLE_EVENT",
+  "request_timestamp": "2026-01-26T14:00:00Z",
+  "response_deadline": "2026-02-09T14:00:00Z",
+  "single_event_params": {
+    "event_id": "01945678-1234-7aaa-8901-234567890002",
+    "batch_id": "01945678-1234-7def-8901-234567890001"
+  },
+  "verification_requirements": {
+    "require_eidas_tsa": false,
+    "require_blockchain_anchor": false,
+    "min_blockchain_confirmations": null,
+    "max_clock_divergence_us": 100
+  },
+  "legal_basis": {
+    "regulation": "FCA MAR 7A.3.9R",
+    "investigation_reference": "INV-2026-001",
+    "urgency": "ROUTINE"
+  }
+}

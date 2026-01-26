@@ -1,0 +1,106 @@
+# VCP Supervision Node Configuration
+# Default configuration for regulatory verification
+
+# Verification settings
+verification:
+  # Signature verification settings
+  signature:
+    algorithm: "Ed25519"
+    require_manifest: true
+    # Path to public key manifest (optional)
+    # manifest_path: "/path/to/manifest.json"
+  
+  # Merkle proof verification settings
+  merkle:
+    hash_algorithm: "SHA-256"
+    rfc6962_compliant: true
+  
+  # External anchor verification settings
+  anchor:
+    # Whether to verify blockchain anchors online
+    verify_blockchain_online: false
+    
+    # Trusted TSA URLs (eIDAS qualified recommended)
+    trusted_tsa_urls:
+      - "https://freetsa.org/tsr"
+      - "https://timestamp.digicert.com"
+      - "https://timestamp.sectigo.com"
+    
+    # Blockchain RPC URLs (if online verification enabled)
+    # blockchain_rpc_urls:
+    #   ethereum: "https://mainnet.infura.io/v3/YOUR_API_KEY"
+    #   polygon: "https://polygon-rpc.com"
+    
+    # Minimum confirmations for blockchain finality
+    min_confirmations:
+      ethereum: 12
+      polygon: 128
+      arbitrum: 1
+  
+  # Timing verification settings
+  timing:
+    # Default jurisdiction for compliance checking
+    default_jurisdiction: "EU"
+    
+    # HFT timestamp precision requirement (microseconds)
+    hft_precision_us: 100
+    
+    # Non-HFT timestamp precision requirement (milliseconds)
+    non_hft_precision_ms: 1
+
+# Reporting settings
+reporting:
+  # DORA incident reporting targets
+  # Note: Based on ESAs RTS/ITS operational targets
+  dora:
+    # Target hours for initial report after classification
+    initial_report_target_hours: 4
+    # Target hours for intermediate reports
+    intermediate_report_hours: 72
+    # Target days for final report after resolution
+    final_report_days: 30
+  
+  # FCA submission requirements
+  fca:
+    # Maximum days for evidence package submission (MAR 7A.3.9R)
+    submission_deadline_days: 14
+  
+  # Report output settings
+  output:
+    format: "json"  # json, pdf, or both
+    # output_directory: "/path/to/reports"
+
+# Dashboard settings (optional)
+dashboard:
+  host: "0.0.0.0"
+  port: 8080
+  # Refresh interval for dashboard updates (seconds)
+  refresh_interval_seconds: 5
+  # Enable authentication
+  auth_enabled: false
+  # auth_secret: "your-secret-key"
+
+# Logging settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "json"  # json or console
+  # Log file path (optional)
+  # file_path: "/var/log/vcp-supervision/node.log"
+
+# Performance settings
+performance:
+  # Maximum concurrent verifications
+  max_concurrent: 100
+  # Verification timeout (seconds)
+  timeout_seconds: 30
+  # Batch size for bulk verification
+  batch_size: 1000
+
+# Storage settings (for caching and state)
+storage:
+  # Cache verification results
+  enable_cache: true
+  # Cache TTL (seconds)
+  cache_ttl_seconds: 3600
+  # State persistence
+  # state_path: "/var/lib/vcp-supervision/state.db"

@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritaschain.org/schemas/vcp-supervision/challenge_response.schema.json",
+  "title": "VCP Challenge Response",
+  "description": "Schema for a firm's response to a regulator-initiated on-demand proof request",
+  "schemaVersion": "1.0.0",
+  "vcpVersion": "1.1",
+  "type": "object",
+  "required": ["schema_version", "response_id", "challenge_id", "responder", "response_status", "response_timestamp"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this schema",
+      "const": "1.0.0"
+    },
+    "vcp_version": {
+      "type": "string",
+      "description": "VCP specification version of provided data",
+      "enum": ["1.0", "1.1"]
+    },
+    "response_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this response"
+    },
+    "challenge_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Reference to the original challenge request"
+    },
+    "responder": {
+      "type": "object",
+      "description": "Entity responding to the challenge",
+      "required": ["entity_id", "entity_name"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "Unique identifier of the responding entity"
+        },
+        "entity_name": {
+          "type": "string",
+          "description": "Name of the responding entity"
+        },
+        "contact_email": {
+          "type": "string",
+          "format": "email",
+          "description": "Contact email for follow-up"
+        }
+      }
+    },
+    "response_status": {
+      "type": "string",
+      "description": "Status of the response",
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "UNABLE_TO_COMPLY",
+        "EXTENSION_REQUESTED"
+      ]
+    },
+    "response_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the response"
+    },
+    "events": {
+      "type": "array",
+      "description": "Array of requested VCP events",
+      "items": {
+        "$ref": "batch_envelope.schema.json#/$defs/VCPEvent"
+      }
+    },
+    "proofs": {
+      "type": "array",
+      "description": "Merkle proofs for each event",
+      "items": {
+        "$ref": "batch_envelope.schema.json#/$defs/MerkleProof"
+      }
+    },
+    "anchors": {
+      "type": "array",
+      "description": "Anchor records covering the events",
+      "items": {
+        "$ref": "batch_envelope.schema.json#/$defs/AnchorRecord"
+      }
+    },
+    "batch_mappings": {
+      "type": "array",
+      "description": "Mapping of events to their containing batches",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batch_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "anchor_index": {
+            "type": "integer",
+            "description": "Index into the anchors array"
+          }
+        },
+        "required": ["event_id", "batch_id", "anchor_index"]
+      }
+    },
+    "completeness_declaration": {
+      "type": "object",
+      "description": "Declaration of completeness for the response",
+      "properties": {
+        "total_events_in_scope": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total events matching the challenge criteria"
+        },
+        "events_provided": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of events provided in this response"
+        },
+        "sequence_range_complete": {
+          "type": "boolean",
+          "description": "Whether the sequence range is complete (no gaps)"
+        },
+        "gaps_identified": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "gap_start": {"type": "integer"},
+              "gap_end": {"type": "integer"},
+              "reason": {"type": "string"}
+            }
+          },
+          "description": "Any identified gaps in the sequence"
+        }
+      }
+    },
+    "partial_response_reason": {
+      "type": "object",
+      "description": "Explanation if response is PARTIAL or UNABLE_TO_COMPLY",
+      "properties": {
+        "reason_code": {
+          "type": "string",
+          "enum": [
+            "DATA_UNAVAILABLE",
+            "RETENTION_EXPIRED",
+            "TECHNICAL_FAILURE",
+            "LEGAL_RESTRICTION",
+            "TIME_CONSTRAINTS",
+            "OTHER"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation"
+        },
+        "missing_event_ids": {
+          "type": "array",
+          "items": {"type": "string", "format": "uuid"},
+          "description": "List of event IDs that could not be provided"
+        },
+        "remediation_plan": {
+          "type": "string",
+          "description": "Plan to address the issue"
+        }
+      }
+    },
+    "extension_request": {
+      "type": "object",
+      "description": "Details if EXTENSION_REQUESTED",
+      "properties": {
+        "requested_deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "New requested deadline"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for extension"
+        }
+      }
+    },
+    "verification_metadata": {
+      "type": "object",
+      "description": "Metadata to assist verification",
+      "properties": {
+        "vcp_version": {
+          "type": "string",
+          "description": "VCP specification version used",
+          "examples": ["1.0", "1.1"]
+        },
+        "sidecar_version": {
+          "type": "string",
+          "description": "VCP Sidecar software version"
+        },
+        "hash_algorithm": {
+          "type": "string",
+          "const": "SHA-256"
+        },
+        "merkle_tree_type": {
+          "type": "string",
+          "const": "RFC6962"
+        },
+        "signature_algorithm": {
+          "type": "string",
+          "const": "Ed25519"
+        }
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "description": "Formal attestation of response accuracy",
+      "properties": {
+        "attester_name": {
+          "type": "string",
+          "description": "Name of person attesting"
+        },
+        "attester_title": {
+          "type": "string",
+          "description": "Title/role of attester"
+        },
+        "attestation_text": {
+          "type": "string",
+          "description": "Attestation statement"
+        },
+        "attested_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Digital signature of the entire response",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "Ed25519"
+        },
+        "public_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "signed_fields": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of fields included in signature",
+          "examples": [["response_id", "challenge_id", "events", "proofs", "anchors"]]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "response_status": { "const": "COMPLETE" } }
+      },
+      "then": {
+        "required": ["events", "proofs", "anchors"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "response_status": { "const": "PARTIAL" } }
+      },
+      "then": {
+        "required": ["events", "proofs", "anchors", "partial_response_reason"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "response_status": { "const": "UNABLE_TO_COMPLY" } }
+      },
+      "then": {
+        "required": ["partial_response_reason"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "response_status": { "const": "EXTENSION_REQUESTED" } }
+      },
+      "then": {
+        "required": ["extension_request"]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "response_id": "01945678-9abc-7def-0123-456789abcdef",
+      "challenge_id": "01945678-1234-7def-8901-234567890abc",
+      "responder": {
+        "entity_id": "FIRM-001",
+        "entity_name": "Example Trading Ltd",
+        "contact_email": "compliance@example-trading.com"
+      },
+      "response_status": "COMPLETE",
+      "response_timestamp": "2026-01-28T10:00:00Z",
+      "events": [],
+      "proofs": [],
+      "anchors": [],
+      "completeness_declaration": {
+        "total_events_in_scope": 1,
+        "events_provided": 1,
+        "sequence_range_complete": true,
+        "gaps_identified": []
+      },
+      "verification_metadata": {
+        "vcp_version": "1.1",
+        "hash_algorithm": "SHA-256",
+        "merkle_tree_type": "RFC6962",
+        "signature_algorithm": "Ed25519"
+      },
+      "attestation": {
+        "attester_name": "Jane Smith",
+        "attester_title": "Chief Compliance Officer",
+        "attestation_text": "I attest that this response contains complete and accurate information to the best of my knowledge.",
+        "attested_at": "2026-01-28T10:00:00Z"
+      }
+    }
+  ]
+}

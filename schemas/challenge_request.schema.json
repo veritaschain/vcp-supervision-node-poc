@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritaschain.org/schemas/vcp-supervision/challenge_request.schema.json",
+  "title": "VCP Challenge Request",
+  "description": "Schema for a regulator-initiated on-demand proof request (Assertion C capability)",
+  "schemaVersion": "1.0.0",
+  "vcpVersion": "1.1",
+  "type": "object",
+  "required": ["schema_version", "challenge_id", "requester", "target", "challenge_type"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this schema",
+      "const": "1.0.0"
+    },
+    "vcp_version": {
+      "type": "string",
+      "description": "VCP specification version expected in response",
+      "enum": ["1.0", "1.1"],
+      "default": "1.1"
+    },
+    "challenge_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this challenge request"
+    },
+    "requester": {
+      "type": "object",
+      "description": "Regulatory authority making the request",
+      "required": ["authority_id", "authority_name"],
+      "properties": {
+        "authority_id": {
+          "type": "string",
+          "description": "Unique identifier for the regulatory authority"
+        },
+        "authority_name": {
+          "type": "string",
+          "description": "Name of the regulatory authority",
+          "examples": ["FCA", "SEC", "MAS", "ESMA"]
+        },
+        "jurisdiction": {
+          "type": "string",
+          "enum": ["EU", "UK", "US", "JP", "SG", "HK", "AU", "CA", "CH"]
+        },
+        "officer_id": {
+          "type": "string",
+          "description": "Optional: ID of the requesting officer"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "description": "Entity being challenged",
+      "required": ["entity_id"],
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "Unique identifier of the target entity"
+        },
+        "entity_name": {
+          "type": "string",
+          "description": "Name of the target entity"
+        }
+      }
+    },
+    "challenge_type": {
+      "type": "string",
+      "description": "Type of challenge request",
+      "enum": [
+        "SINGLE_EVENT",
+        "EVENT_RANGE",
+        "RANDOM_SAMPLE",
+        "TIME_WINDOW",
+        "ALGORITHM_AUDIT"
+      ]
+    },
+    "request_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the challenge request"
+    },
+    "response_deadline": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Deadline for the challenged party to respond"
+    },
+    "single_event_params": {
+      "type": "object",
+      "description": "Parameters for SINGLE_EVENT challenge",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Specific event ID to retrieve proof for"
+        },
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Optional: Batch containing the event"
+        }
+      },
+      "required": ["event_id"]
+    },
+    "event_range_params": {
+      "type": "object",
+      "description": "Parameters for EVENT_RANGE challenge",
+      "properties": {
+        "sequence_start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Start sequence number"
+        },
+        "sequence_end": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "End sequence number"
+        }
+      },
+      "required": ["sequence_start", "sequence_end"]
+    },
+    "random_sample_params": {
+      "type": "object",
+      "description": "Parameters for RANDOM_SAMPLE challenge",
+      "properties": {
+        "sample_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Number of random events to sample"
+        },
+        "seed": {
+          "type": "string",
+          "description": "Random seed for reproducibility (optional)"
+        },
+        "time_window_start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of sampling window"
+        },
+        "time_window_end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of sampling window"
+        }
+      },
+      "required": ["sample_size"]
+    },
+    "time_window_params": {
+      "type": "object",
+      "description": "Parameters for TIME_WINDOW challenge",
+      "properties": {
+        "start_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of time window"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of time window"
+        },
+        "include_anchors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include anchor records for each batch"
+        }
+      },
+      "required": ["start_time", "end_time"]
+    },
+    "algorithm_audit_params": {
+      "type": "object",
+      "description": "Parameters for ALGORITHM_AUDIT challenge",
+      "properties": {
+        "algorithm_id": {
+          "type": "string",
+          "description": "Algorithm ID to audit"
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Audit period start"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Audit period end"
+        },
+        "event_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Filter by specific event types"
+        }
+      },
+      "required": ["algorithm_id"]
+    },
+    "verification_requirements": {
+      "type": "object",
+      "description": "Specific verification requirements",
+      "properties": {
+        "require_eidas_tsa": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require eIDAS qualified TSA anchor"
+        },
+        "require_blockchain_anchor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require blockchain anchor"
+        },
+        "min_blockchain_confirmations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum blockchain confirmations required"
+        },
+        "max_clock_divergence_us": {
+          "type": "integer",
+          "description": "Maximum allowed UTC divergence in microseconds"
+        }
+      }
+    },
+    "legal_basis": {
+      "type": "object",
+      "description": "Legal basis for the challenge request",
+      "properties": {
+        "regulation": {
+          "type": "string",
+          "description": "Applicable regulation",
+          "examples": ["MiFID II Article 17", "FCA MAR 7A.3.9R", "SEC 17a-4"]
+        },
+        "investigation_reference": {
+          "type": "string",
+          "description": "Optional: Investigation or case reference"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["ROUTINE", "PRIORITY", "URGENT"],
+          "default": "ROUTINE"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Digital signature of the challenge request",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "Ed25519"
+        },
+        "public_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+=*$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "challenge_type": { "const": "SINGLE_EVENT" } }
+      },
+      "then": {
+        "required": ["single_event_params"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "challenge_type": { "const": "EVENT_RANGE" } }
+      },
+      "then": {
+        "required": ["event_range_params"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "challenge_type": { "const": "RANDOM_SAMPLE" } }
+      },
+      "then": {
+        "required": ["random_sample_params"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "challenge_type": { "const": "TIME_WINDOW" } }
+      },
+      "then": {
+        "required": ["time_window_params"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "challenge_type": { "const": "ALGORITHM_AUDIT" } }
+      },
+      "then": {
+        "required": ["algorithm_audit_params"]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "challenge_id": "01945678-1234-7def-8901-234567890abc",
+      "requester": {
+        "authority_id": "FCA-001",
+        "authority_name": "Financial Conduct Authority",
+        "jurisdiction": "UK"
+      },
+      "target": {
+        "entity_id": "FIRM-001",
+        "entity_name": "Example Trading Ltd"
+      },
+      "challenge_type": "SINGLE_EVENT",
+      "request_timestamp": "2026-01-26T12:00:00Z",
+      "response_deadline": "2026-02-09T12:00:00Z",
+      "single_event_params": {
+        "event_id": "01945678-5678-7def-8901-234567890def"
+      },
+      "legal_basis": {
+        "regulation": "FCA MAR 7A.3.9R",
+        "urgency": "ROUTINE"
+      }
+    }
+  ]
+}

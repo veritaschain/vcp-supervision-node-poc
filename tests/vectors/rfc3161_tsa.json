@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RFC 3161 TSA Test Vectors",
+  "description": "Test vectors for Time-Stamp Protocol verification. These are mock/sample vectors for testing purposes.",
+  "version": "1.0",
+  "source": "https://datatracker.ietf.org/doc/html/rfc3161",
+  "disclaimer": "These test vectors are for development and testing only. Real TSP responses should be obtained from actual TSA services.",
+  "tsa_services": {
+    "trusted": [
+      {
+        "name": "DigiCert Timestamp",
+        "url": "https://timestamp.digicert.com",
+        "is_eidas_qualified": false,
+        "description": "DigiCert public timestamp service"
+      },
+      {
+        "name": "FreeTSA",
+        "url": "https://freetsa.org/tsr",
+        "is_eidas_qualified": false,
+        "description": "Free timestamp service"
+      },
+      {
+        "name": "Sectigo (Comodo)",
+        "url": "http://timestamp.sectigo.com",
+        "is_eidas_qualified": false,
+        "description": "Sectigo public timestamp"
+      },
+      {
+        "name": "GlobalSign",
+        "url": "http://timestamp.globalsign.com/tsa/r6advanced1",
+        "is_eidas_qualified": false,
+        "description": "GlobalSign timestamp service"
+      }
+    ],
+    "eidas_qualified": [
+      {
+        "name": "Example Qualified TSA",
+        "url": "https://qualified-tsa.example.eu",
+        "is_eidas_qualified": true,
+        "description": "Example of eIDAS qualified TSA (placeholder)",
+        "note": "In production, use actual eIDAS qualified TSA from EU Trusted List"
+      }
+    ],
+    "untrusted": [
+      {
+        "name": "Unknown TSA",
+        "url": "https://unknown-tsa.example.com",
+        "is_eidas_qualified": false,
+        "description": "Unknown TSA not in trusted list - should be rejected"
+      }
+    ]
+  },
+  "test_vectors": [
+    {
+      "name": "Valid TSP Response",
+      "description": "Mock valid timestamp response",
+      "request": {
+        "message_imprint": {
+          "hash_algorithm": "SHA-256",
+          "hashed_message_hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "nonce_hex": "0102030405060708",
+        "cert_req": true
+      },
+      "response": {
+        "status": {
+          "status": 0,
+          "status_string": "Operation Successful"
+        },
+        "time_stamp_token": {
+          "content_type": "id-signedData",
+          "tst_info": {
+            "version": 1,
+            "policy": "1.2.3.4.5",
+            "message_imprint": {
+              "hash_algorithm": "SHA-256",
+              "hashed_message_hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "serial_number": "12345678",
+            "gen_time": "2026-01-26T12:00:00Z",
+            "accuracy": {
+              "seconds": 1,
+              "millis": 0,
+              "micros": 0
+            },
+            "nonce_hex": "0102030405060708"
+          },
+          "signer_info": {
+            "issuer": "CN=DigiCert Timestamp 2023, O=DigiCert, C=US",
+            "serial": "0123456789ABCDEF"
+          }
+        },
+        "token_base64": "MIIKLgYJKoZIhvcNAQcCoIIKHzCCChsCAQMxDzANBglghkgBZQMEAgEFADCBmAYLKoZIhvcNAQkQAQSggYgEgYUwgYICAQEGCisGAQQBsT4DBwEwMTANBglghkgBZQMEAgEFAAQg47DEQpj8HBSav7TImW+5QnrqQeRkmTTKSVmZG3hSuFUCEQCTDeYvr8+cVNsLpOGhYA0XGA8yMDI2MDEyNjEyMDAwMFqgGDAWAgIDqAIIAQIDBAUGBwigAwIBAaIEAgIA..."
+      },
+      "verification": {
+        "expected_result": "VALID",
+        "checks": [
+          "Message imprint matches request",
+          "Nonce matches request",
+          "Signature is valid",
+          "Certificate chain is valid",
+          "TSA is in trusted list"
+        ]
+      }
+    },
+    {
+      "name": "Hash Mismatch",
+      "description": "TSP response with different message imprint",
+      "request": {
+        "message_imprint": {
+          "hash_algorithm": "SHA-256",
+          "hashed_message_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "response": {
+        "tst_info": {
+          "message_imprint": {
+            "hash_algorithm": "SHA-256",
+            "hashed_message_hex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      },
+      "verification": {
+        "expected_result": "INVALID",
+        "error_code": "TSA_HASH_MISMATCH",
+        "description": "Message imprint in response does not match expected hash"
+      }
+    },
+    {
+      "name": "Untrusted TSA",
+      "description": "Valid token from TSA not in trusted list",
+      "tsa_url": "https://unknown-tsa.example.com",
+      "verification": {
+        "expected_result": "INVALID",
+        "error_code": "TSA_NOT_TRUSTED",
+        "description": "TSA URL not in configured trusted list"
+      }
+    },
+    {
+      "name": "Expired Certificate",
+      "description": "TSA certificate has expired",
+      "verification": {
+        "expected_result": "INVALID",
+        "error_code": "TSA_CERT_EXPIRED",
+        "description": "TSA signing certificate has expired"
+      }
+    },
+    {
+      "name": "Invalid Signature",
+      "description": "TSP token with invalid signature",
+      "verification": {
+        "expected_result": "INVALID",
+        "error_code": "TSA_SIGNATURE_INVALID",
+        "description": "Cryptographic signature on token is invalid"
+      }
+    }
+  ],
+  "status_codes": {
+    "description": "RFC 3161 PKIStatus values",
+    "values": [
+      {"code": 0, "name": "granted", "description": "Time stamp request granted"},
+      {"code": 1, "name": "grantedWithMods", "description": "Time stamp request granted with modifications"},
+      {"code": 2, "name": "rejection", "description": "Time stamp request rejected"},
+      {"code": 3, "name": "waiting", "description": "Request is pending"},
+      {"code": 4, "name": "revocationWarning", "description": "Revocation warning"},
+      {"code": 5, "name": "revocationNotification", "description": "Revocation notification"}
+    ]
+  },
+  "implementation_notes": [
+    "In production, use a proper ASN.1 library (pyasn1, asn1crypto) for TSP parsing",
+    "Verify the entire certificate chain, not just the immediate signer",
+    "Cache certificate revocation lists (CRLs) and OCSP responses",
+    "Consider clock skew when validating timestamps",
+    "For eIDAS compliance, verify TSA is on the EU Trusted List"
+  ]
+}

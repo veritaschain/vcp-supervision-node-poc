@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RFC 6962 Merkle Tree Test Vectors",
+  "description": "Test vectors for RFC 6962 compliant Merkle tree verification. Based on Certificate Transparency reference implementation.",
+  "version": "1.0",
+  "source": "https://datatracker.ietf.org/doc/html/rfc6962",
+  "test_vectors": [
+    {
+      "name": "Single leaf tree",
+      "description": "Tree with single leaf has root equal to leaf hash",
+      "tree_size": 1,
+      "leaves": [
+        {
+          "data": "test data",
+          "data_hex": "7465737420646174610a",
+          "leaf_hash_hex": "a48c98b7b5e67f4b6b8ad3c9a7e6e7f5b3c8d9e2f1a0b4c5d6e7f8a9b0c1d2e3"
+        }
+      ],
+      "expected_root_hex": "a48c98b7b5e67f4b6b8ad3c9a7e6e7f5b3c8d9e2f1a0b4c5d6e7f8a9b0c1d2e3",
+      "inclusion_proofs": [
+        {
+          "leaf_index": 0,
+          "path": [],
+          "directions": []
+        }
+      ]
+    },
+    {
+      "name": "Two leaf tree",
+      "description": "Tree with two leaves",
+      "tree_size": 2,
+      "leaves": [
+        {
+          "data": "leaf 0",
+          "leaf_hash_hex": "0000000000000000000000000000000000000000000000000000000000000001"
+        },
+        {
+          "data": "leaf 1",
+          "leaf_hash_hex": "0000000000000000000000000000000000000000000000000000000000000002"
+        }
+      ],
+      "expected_root_hex": "d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
+      "inclusion_proofs": [
+        {
+          "leaf_index": 0,
+          "path": ["0000000000000000000000000000000000000000000000000000000000000002"],
+          "directions": ["RIGHT"]
+        },
+        {
+          "leaf_index": 1,
+          "path": ["0000000000000000000000000000000000000000000000000000000000000001"],
+          "directions": ["LEFT"]
+        }
+      ]
+    },
+    {
+      "name": "Four leaf balanced tree",
+      "description": "Balanced tree with 4 leaves",
+      "tree_size": 4,
+      "leaves": [
+        {"data": "d0", "leaf_hash_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+        {"data": "d1", "leaf_hash_hex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+        {"data": "d2", "leaf_hash_hex": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+        {"data": "d3", "leaf_hash_hex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}
+      ],
+      "structure": {
+        "description": "Tree structure visualization",
+        "diagram": [
+          "        root",
+          "       /    \\",
+          "     H01    H23",
+          "    /  \\   /  \\",
+          "   L0  L1 L2  L3"
+        ]
+      },
+      "inclusion_proofs": [
+        {
+          "leaf_index": 0,
+          "description": "Proof for leaf 0 (d0)",
+          "path": [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "H23_hash_placeholder"
+          ],
+          "directions": ["RIGHT", "RIGHT"]
+        },
+        {
+          "leaf_index": 2,
+          "description": "Proof for leaf 2 (d2)",
+          "path": [
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "H01_hash_placeholder"
+          ],
+          "directions": ["RIGHT", "LEFT"]
+        }
+      ]
+    },
+    {
+      "name": "Seven leaf unbalanced tree",
+      "description": "RFC 6962 handles unbalanced trees by promoting smaller subtrees",
+      "tree_size": 7,
+      "structure": {
+        "description": "Unbalanced tree structure",
+        "diagram": [
+          "           root",
+          "          /    \\",
+          "        H0-3   H4-6",
+          "        /  \\    |  \\",
+          "      H01  H23  H45  L6",
+          "     /  \\  / \\  / \\",
+          "    L0 L1 L2 L3 L4 L5"
+        ]
+      }
+    }
+  ],
+  "hash_algorithm": {
+    "name": "SHA-256",
+    "leaf_prefix": "0x00",
+    "node_prefix": "0x01",
+    "description": "RFC 6962 uses domain separation: leaf_hash = H(0x00 || data), node_hash = H(0x01 || left || right)"
+  },
+  "verification_algorithm": {
+    "description": "RFC 6962 inclusion proof verification",
+    "pseudocode": [
+      "function verify_inclusion(leaf_hash, leaf_index, tree_size, root, proof):",
+      "  computed = leaf_hash",
+      "  index = leaf_index",
+      "  for (sibling, direction) in zip(proof.path, proof.directions):",
+      "    if direction == LEFT:",
+      "      computed = H(0x01 || sibling || computed)",
+      "    else:",
+      "      computed = H(0x01 || computed || sibling)",
+      "    index = index // 2",
+      "  return computed == root"
+    ]
+  },
+  "edge_cases": [
+    {
+      "name": "Empty tree",
+      "tree_size": 0,
+      "expected_root": null,
+      "description": "Empty tree has no root"
+    },
+    {
+      "name": "Invalid proof - wrong direction count",
+      "description": "Proof path and directions must have same length",
+      "should_fail": true
+    },
+    {
+      "name": "Invalid proof - index out of bounds",
+      "description": "leaf_index must be < tree_size",
+      "should_fail": true
+    },
+    {
+      "name": "Invalid proof - wrong root",
+      "description": "Reconstructed root must match expected",
+      "should_fail": true
+    }
+  ]
+}

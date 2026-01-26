@@ -1,0 +1,164 @@
+{
+  "description": "Sample VCP events for testing verification",
+  "version": "1.0",
+  "events": [
+    {
+      "event": {
+        "event_id": "01945678-1234-7def-8901-234567890abc",
+        "timestamp": "2026-01-26T12:00:00.123456Z",
+        "timestamp_precision": "MICROSECOND",
+        "clock_sync_status": "PTP_LOCKED",
+        "sequence_num": 0,
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "event_type": "ALGO_STARTED",
+        "payload": {
+          "algorithm_id": "ALGO-001",
+          "algorithm_name": "VWAP Strategy",
+          "parameters": {
+            "target_participation": 0.15,
+            "time_window_minutes": 60
+          }
+        },
+        "algorithm_id": "ALGO-001",
+        "signature": {
+          "algorithm": "Ed25519",
+          "public_key": "MCowBQYDK2VwAyEAexamplePublicKeyBase64encodedString",
+          "value": "exampleSignatureBase64encodedString"
+        }
+      },
+      "proof": {
+        "leaf_index": 0,
+        "tree_size": 1,
+        "root_hash": "exampleRootHashBase64",
+        "path": [],
+        "directions": []
+      },
+      "anchor": {
+        "anchor_type": "TSA",
+        "merkle_root": "exampleRootHashBase64",
+        "anchor_timestamp": "2026-01-26T12:01:00Z",
+        "batch_start_seq": 0,
+        "batch_end_seq": 0,
+        "tsa_anchor": {
+          "tsa_url": "https://freetsa.org/tsr",
+          "token": "exampleTSPTokenBase64",
+          "timestamp": "2026-01-26T12:01:00Z",
+          "is_eidas_qualified": false
+        }
+      }
+    },
+    {
+      "event": {
+        "event_id": "01945678-1234-7def-8901-234567890abd",
+        "timestamp": "2026-01-26T12:00:01.234567Z",
+        "timestamp_precision": "MICROSECOND",
+        "clock_sync_status": "PTP_LOCKED",
+        "sequence_num": 1,
+        "prev_hash": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+        "event_type": "ORDER_NEW",
+        "payload": {
+          "order_id": "ORD-2026-001",
+          "symbol": "EURUSD",
+          "side": "BUY",
+          "quantity": 100000,
+          "order_type": "LIMIT",
+          "price": 1.0850,
+          "time_in_force": "DAY"
+        },
+        "algorithm_id": "ALGO-001",
+        "correlation_id": "CORR-001",
+        "signature": {
+          "algorithm": "Ed25519",
+          "public_key": "MCowBQYDK2VwAyEAexamplePublicKeyBase64encodedString",
+          "value": "exampleSignatureBase64encodedString"
+        }
+      },
+      "proof": {
+        "leaf_index": 1,
+        "tree_size": 10,
+        "root_hash": "batchRootHashBase64",
+        "path": ["sibling1Hash", "sibling2Hash", "sibling3Hash"],
+        "directions": ["RIGHT", "LEFT", "RIGHT"]
+      },
+      "anchor": {
+        "anchor_type": "DUAL",
+        "merkle_root": "batchRootHashBase64",
+        "anchor_timestamp": "2026-01-26T12:10:00Z",
+        "batch_start_seq": 0,
+        "batch_end_seq": 9,
+        "tsa_anchor": {
+          "tsa_url": "https://timestamp.digicert.com",
+          "token": "exampleTSPTokenBase64",
+          "timestamp": "2026-01-26T12:10:00Z",
+          "is_eidas_qualified": true
+        },
+        "blockchain_anchor": {
+          "chain": "ethereum",
+          "network": "mainnet",
+          "transaction_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          "block_number": 19000000,
+          "block_timestamp": "2026-01-26T12:10:30Z",
+          "merkle_root_in_tx": "batchRootHashBase64",
+          "confirmations": 15
+        }
+      }
+    },
+    {
+      "event": {
+        "event_id": "01945678-1234-7def-8901-234567890abe",
+        "timestamp": "2026-01-26T12:00:01.345678Z",
+        "timestamp_precision": "MICROSECOND",
+        "clock_sync_status": "PTP_LOCKED",
+        "sequence_num": 2,
+        "prev_hash": "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678",
+        "event_type": "FILL",
+        "payload": {
+          "order_id": "ORD-2026-001",
+          "fill_id": "FILL-2026-001",
+          "symbol": "EURUSD",
+          "side": "BUY",
+          "quantity": 50000,
+          "price": 1.0849,
+          "venue": "EBS",
+          "counterparty_id": "CP-001"
+        },
+        "algorithm_id": "ALGO-001",
+        "correlation_id": "CORR-001",
+        "signature": {
+          "algorithm": "Ed25519",
+          "public_key": "MCowBQYDK2VwAyEAexamplePublicKeyBase64encodedString",
+          "value": "exampleSignatureBase64encodedString"
+        }
+      },
+      "proof": {
+        "leaf_index": 2,
+        "tree_size": 10,
+        "root_hash": "batchRootHashBase64",
+        "path": ["sibling1Hash", "sibling2Hash", "sibling3Hash"],
+        "directions": ["LEFT", "LEFT", "RIGHT"]
+      },
+      "anchor": {
+        "anchor_type": "DUAL",
+        "merkle_root": "batchRootHashBase64",
+        "anchor_timestamp": "2026-01-26T12:10:00Z",
+        "batch_start_seq": 0,
+        "batch_end_seq": 9,
+        "tsa_anchor": {
+          "tsa_url": "https://timestamp.digicert.com",
+          "token": "exampleTSPTokenBase64",
+          "timestamp": "2026-01-26T12:10:00Z",
+          "is_eidas_qualified": true
+        },
+        "blockchain_anchor": {
+          "chain": "ethereum",
+          "network": "mainnet",
+          "transaction_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          "block_number": 19000000,
+          "block_timestamp": "2026-01-26T12:10:30Z",
+          "merkle_root_in_tx": "batchRootHashBase64",
+          "confirmations": 15
+        }
+      }
+    }
+  ]
+}
