@@ -134,7 +134,7 @@ class VCPEvidenceBundle:
 @dataclass
 class DORAReportData:
     """
-    DORA-compliant incident report data structure.
+    DORA-aligned incident report data structure (does not determine DORA compliance).
     
     Prepared data for submission to competent authorities.
     Note: Actual submission format may vary by NCA requirements.
@@ -192,7 +192,7 @@ class DORAReportingSupport:
     """
     DORA incident reporting support tool.
     
-    Provides data preparation and evidence bundling for DORA-compliant
+    Provides data preparation and evidence bundling for DORA-aligned
     incident reports. This is a *support tool* - actual submissions
     must be prepared according to your NCA's specific requirements.
     

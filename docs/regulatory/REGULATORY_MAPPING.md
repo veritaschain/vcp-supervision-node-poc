@@ -1,6 +1,6 @@
 # Regulatory Mapping for VCP Supervision Node
 
-This document maps regulatory requirements to VCP Supervision Node capabilities across 10 jurisdictions.
+This document maps regulatory requirements to VCP Supervision Node capabilities across 9 jurisdictions. The mapping is design intent; it does not determine regulatory compliance.
 
 ## Document Information
 
@@ -46,8 +46,8 @@ All regulatory references are classified by evidence strength:
 
 ```
 ClockSyncStatus Mapping:
-├── PTP_LOCKED    → <1µs accuracy  → EU/UK HFT compliant
-├── NTP_SYNCED    → <1ms accuracy  → EU/UK Non-HFT compliant
+├── PTP_LOCKED    → <1µs accuracy  → meets the VCP Platinum clock-sync indicator; regulatory compliance not determined
+├── NTP_SYNCED    → <1ms accuracy  → meets the VCP Gold clock-sync indicator; regulatory compliance not determined
 ├── BEST_EFFORT   → Variable       → Warning for regulated entities
 └── UNRELIABLE    → Unknown        → Rejected for all jurisdictions
 ```

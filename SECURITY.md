@@ -364,7 +364,7 @@ export VCP_ENCRYPTION_KEY="..."  # For at-rest encryption
 |------------|----------------------|--------|
 | GDPR | Data minimization, right to erasure | PII not collected |
 | eIDAS | Qualified timestamp requirements | TSA validation supported |
-| SEC 17a-4 | Immutable record retention | Anchor verification provides |
+| SEC 17a-4 | Record retention (WORM or audit-trail alternative) | Anchor verification supports tamper-evidence; compliance not determined |
 | MiFID II | Audit trail integrity | Merkle proof verification |
 | DORA | ICT incident reporting | Reporting module support |
 

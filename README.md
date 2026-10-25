@@ -1,16 +1,23 @@
+> **Status correction — 25 October 2026**
+>
+> - This is first-party proof-of-concept code by VeritasChain Co., Ltd., which operates the VeritasChain Standards Organization (VSO). It targets VCP v1.1. VCP v1.1 has no tagged release and is superseded by VCP v1.2 (Released, tag `v1.2.0`).
+> - Conformance to any VCP tier, or to VAP, has not been independently established. There are zero external implementations of VAP or any of its profiles, including VCP.
+> - Not certified. VSO does not issue certificates. The certification scheme requires a Conformity Assessment Body (CAB) independent of the scheme owner; the only registered CAB, VeritasChain Co., Ltd., is not independent (VAP v1.2 ERRATA E-2026-10-21).
+> - Known limitations: the RFC 3161 TSA check (`verification/anchor.py`) does not parse the token or compare its message imprint with the Merkle root; it returns PASSED when the TSA URL is on the trusted list. API authentication (`api/auth.py`) is a placeholder that accepts any bearer token. "Compliance scores" and the regulatory-alignment tables are internal indicators and design intent; they do not determine compliance with any regulation.
+
 # VCP Supervision Node - Proof of Concept
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![VCP Version](https://img.shields.io/badge/VCP-v1.1-green.svg)](https://github.com/veritaschain/vcp-spec)
 
-> **What it is:** A regulator-side verification node for VCP-compliant trading audit trails  
+> **What it is:** A regulator-side verification node for VCP trading audit trails  
 > **What it verifies:** Merkle inclusion proofs + external anchors (TSA/blockchain) + timing metadata  
 > **What it outputs:** Green/red integrity status + evidence bundle for regulatory review
 
 ---
 
-**"Verify, Don't Trust"** — Mathematical proof over faith-based acceptance
+**"Verify, Don't Trust"**
 
 ## Overview
 
@@ -159,7 +166,7 @@ See [docs/world-first/WORLD_FIRST.md](docs/world-first/WORLD_FIRST.md) for compl
 
 ## Regulatory Alignment
 
-This PoC is designed to align with requirements from 10 jurisdictions:
+This PoC is designed to align with requirements from 9 jurisdictions (design intent; compliance is not determined):
 
 | Jurisdiction | Key Regulations | Timestamp Precision | Retention |
 |-------------|-----------------|---------------------|-----------|
@@ -290,7 +297,7 @@ See [docs/api/](docs/api/) for detailed API documentation.
 - `MerkleVerifier`: RFC 6962 Merkle proof verification
 - `AnchorVerifier`: External anchor (TSA/Blockchain) verification
 - `TimingVerifier`: Timestamp precision and clock sync verification
-- `DORAReporter`: DORA-compliant incident reporting support
+- `DORAReporter`: DORA-aligned data preparation
 - `ComplianceDashboard`: Web-based visualization
 
 ## Contributing

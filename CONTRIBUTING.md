@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the VCP Supervision Node project!
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+This project adheres to the [Contributor Covenant Code of Conduct](https://github.com/veritaschain/.github/blob/main/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## How to Contribute
 
