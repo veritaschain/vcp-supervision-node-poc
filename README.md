@@ -2,7 +2,7 @@
 >
 > - This is first-party proof-of-concept code by VeritasChain Co., Ltd., which operates the VeritasChain Standards Organization (VSO). It targets VCP v1.1. VCP v1.1 has no tagged release and is superseded by VCP v1.2 (Released, tag `v1.2.0`).
 > - Conformance to any VCP tier, or to VAP, has not been independently established. There are zero external implementations of VAP or any of its profiles, including VCP.
-> - Not certified. VSO does not issue certificates. The certification scheme requires a Conformity Assessment Body (CAB) independent of the scheme owner; the only registered CAB, VeritasChain Co., Ltd., is not independent (VAP v1.2 ERRATA E-2026-10-21).
+> - Not certified. VSO does not issue certifications itself. The certification scheme requires a Conformity Assessment Body (CAB) independent of the scheme owner; the only registered CAB, VeritasChain Co., Ltd., is not independent (VAP v1.2 ERRATA E-2026-10-21).
 > - Known limitations: the RFC 3161 TSA check (`verification/anchor.py`) does not parse the token or compare its message imprint with the Merkle root; it returns PASSED when the TSA URL is on the trusted list. API authentication (`api/auth.py`) is a placeholder that accepts any bearer token. "Compliance scores" and the regulatory-alignment tables are internal indicators and design intent; they do not determine compliance with any regulation.
 
 # VCP Supervision Node - Proof of Concept
