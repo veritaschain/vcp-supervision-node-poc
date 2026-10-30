@@ -1,9 +1,12 @@
-> **Status correction — 25 October 2026**
+> **Status correction — 25 October 2026; scope clarified 30 October 2026**
 >
 > - This is first-party proof-of-concept code by VeritasChain Co., Ltd., which operates the VeritasChain Standards Organization (VSO). It targets VCP v1.1. VCP v1.1 has no tagged release and is superseded by VCP v1.2 (Released, tag `v1.2.0`).
 > - Conformance to any VCP tier, or to VAP, has not been independently established. There are zero external implementations of VAP or any of its profiles, including VCP.
 > - Not certified. VSO does not issue certifications itself. The certification scheme requires a Conformity Assessment Body (CAB) independent of the scheme owner; the only registered CAB, VeritasChain Co., Ltd., is not independent (VAP v1.2 ERRATA E-2026-10-21).
-> - Known limitations: the RFC 3161 TSA check (`verification/anchor.py`) does not parse the token or compare its message imprint with the Merkle root; it returns PASSED when the TSA URL is on the trusted list. API authentication (`api/auth.py`) is a placeholder that accepts any bearer token. "Compliance scores" and the regulatory-alignment tables are internal indicators and design intent; they do not determine compliance with any regulation.
+> - **Anchor verification is incomplete.** The TSA path in `src/vcp_supervision/verification/anchor.py` decodes base64 and checks a URL allowlist; it does not parse or authenticate the timestamp token or bind its message imprint to the Merkle root. The blockchain path compares caller-supplied root and confirmation fields; without a configured RPC it can pass without an online check, and the optional RPC check only tests transaction existence, not whether transaction data commits to the root.
+> - **Authentication placeholders.** In `src/vcp_supervision/api/auth.py`, `JWTAuth` accepts bearer strings without validating signatures or claims. `MTLSAuth` reads a certificate-identity header without validating a certificate itself. `APIKeyAuth` separately checks a configured key map.
+> - **Result scope.** `PASSED`, `is_compliant`, "compliance scores", and regulatory-alignment tables are local indicators or design intent, not regulatory compliance findings. `is_compliant` is also true for `WARNING`. The `is_eidas_qualified`, `legal_presumption`, and `has_legal_presumption` flags do not establish qualified trust-service status or a legal conclusion.
+> - **Batch checks.** `VerificationEngine.verify_batch()` logs sequence-range completeness and timestamp-ordering failures without changing the returned per-event results. Per-event success therefore does not establish batch completeness or ordering.
 
 # VCP Supervision Node - Proof of Concept
 
@@ -12,8 +15,8 @@
 [![VCP Version](https://img.shields.io/badge/VCP-v1.1-green.svg)](https://github.com/veritaschain/vcp-spec)
 
 > **What it is:** A regulator-side verification node for VCP trading audit trails  
-> **What it verifies:** Merkle inclusion proofs + external anchors (TSA/blockchain) + timing metadata  
-> **What it outputs:** Green/red integrity status + evidence bundle for regulatory review
+> **What it checks:** Selected signature, Merkle inclusion, and timing-metadata checks; external-anchor verification is incomplete  
+> **What it outputs:** PoC status indicators and evidence bundles within the limitations above
 
 ---
 
@@ -21,17 +24,17 @@
 
 ## Overview
 
-The VCP Supervision Node is a Proof of Concept (PoC) implementation that enables regulatory authorities to independently verify the integrity, completeness, and temporal compliance of algorithmic trading logs submitted by market participants.
+The VCP Supervision Node is a first-party Proof of Concept (PoC) exploring regulator-side review of submitted trading logs. It implements selected local checks and reporting structures, with incomplete external-anchor verification and authentication placeholders. It does not establish independent deployment, complete capture of trading activity, or regulatory compliance.
 
-### Key Capabilities
+### Current Checks and Design Targets
 
-| Capability | Description | Regulatory Alignment |
+| Component | Current scope | Intended regulatory relevance (not compliance) |
 |-----------|-------------|---------------------|
 | **Signature Verification** | Ed25519 digital signature validation | SEC Rule 17a-4, eIDAS |
-| **Merkle Proof Verification** | RFC 6962 compliant inclusion proofs | MiFID II Article 17 |
-| **External Anchor Validation** | TSA (RFC 3161) and blockchain anchors | eIDAS Article 42 |
-| **Timing Requirements Check** | Clock sync and precision validation | EU RTS 25, CAT NMS |
-| **Completeness Detection** | Gap and omission detection | DORA, MiFID II |
+| **Merkle Proof Verification** | Merkle inclusion-proof checks | MiFID II Article 17 |
+| **External Anchor Checks** | Incomplete TSA and blockchain checks; see limitations above | eIDAS Article 42 |
+| **Timing Requirements Check** | Submitted clock-sync and precision metadata checks | EU RTS 25, CAT NMS |
+| **Batch Sequence Checks** | Sequence-range checks; failures are logged without updating per-event status | DORA, MiFID II |
 | **Incident Reporting Support** | DORA-aligned data preparation | DORA Article 19-23 |
 
 ### Core Principle: Verify, Don't Trust
@@ -122,9 +125,9 @@ python -m vcp_supervision.dashboard --port 8080
 
 ## Innovation & Prior Art Analysis
 
-Based on independent research across five AI research systems evaluating 300+ sources including academic literature, commercial products, regulatory publications, and standards body documents:
+The linked prior-art report is repository-authored design research. It does not establish independent deployment, complete external-anchor verification, or a world-first result. The comparisons below describe the proposed design and must be read with the implementation limitations above.
 
-> **To the best of available knowledge**, the VCP Supervision Node represents the first publicly documented reference implementation of a regulator-operated verification node for Merkle proof-based validation of financial trading logs with third-party anchoring.
+> **Design goal:** Explore regulator-side review of Merkle proof-based financial trading logs with external anchoring.
 
 ### Key Architectural Distinction
 
@@ -154,7 +157,7 @@ This PoC was evaluated against 15+ potential counterexamples:
 |---------|---------------------|---------|-----------------|-----------------|
 | Primary Purpose | Forensic Integrity | Reporting | Surveillance | DLT Participation |
 | Trust Basis | Mathematics (Merkle) | Authority | Database | Consensus |
-| External Anchor | Yes (TSA/Blockchain) | No | No | Blockchain-native |
+| External Anchor | Incomplete verification paths | No | No | Blockchain-native |
 | Works with Existing Infrastructure | Yes | N/A | Yes | No (requires DLT) |
 | Cryptographic Verification | Yes | No | No | Yes (L1) |
 
@@ -295,7 +298,7 @@ See [docs/api/](docs/api/) for detailed API documentation.
 - `VerificationEngine`: Core verification logic
 - `SignatureVerifier`: Ed25519 signature verification
 - `MerkleVerifier`: RFC 6962 Merkle proof verification
-- `AnchorVerifier`: External anchor (TSA/Blockchain) verification
+- `AnchorVerifier`: Incomplete TSA/blockchain anchor checks; see current scope above
 - `TimingVerifier`: Timestamp precision and clock sync verification
 - `DORAReporter`: DORA-aligned data preparation
 - `ComplianceDashboard`: Web-based visualization
@@ -337,7 +340,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - [EU RTS 25 (Regulation 2017/574)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32017R0574)
 - [EU DORA (Regulation 2022/2554)](https://eur-lex.europa.eu/eli/reg/2022/2554/oj)
 - [EU AI Act (Regulation 2024/1689)](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
-- [SEC Rule 17a-4](https://www.sec.gov/rules/final/2022/34-94382.pdf)
+- [SEC Rule 17a-4](https://www.sec.gov/files/rules/final/2022/34-96034.pdf)
 - [CAT NMS Plan](https://www.catnmsplan.com/)
 
 ### Technical Standards

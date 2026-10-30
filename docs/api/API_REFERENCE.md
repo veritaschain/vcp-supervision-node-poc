@@ -1,5 +1,7 @@
 # VCP Supervision Node API Reference
 
+> **Result scope — 30 October 2026:** `PASSED`, `is_compliant`, compliance scores, and qualification/legal-presumption flags are PoC indicators within incomplete verification paths. They do not establish external-anchor authenticity, qualified trust-service status, or regulatory compliance. `is_compliant` is true for both `PASSED` and `WARNING`; batch completeness/ordering warnings do not change returned per-event results. See the [current implementation limitations](../../README.md).
+
 ## Overview
 
 The VCP Supervision Node provides both a Python API and a REST API (via the dashboard) for verification operations.
