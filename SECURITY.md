@@ -1,5 +1,7 @@
 # Security Policy
 
+> **Implementation scope — 30 October 2026:** The threat mitigations and production configuration below describe design guidance, not demonstrated production controls. Current TSA verification does not authenticate a token or check its message imprint, blockchain verification does not establish an on-chain commitment to the root, and JWT/mTLS handlers remain placeholders. Result and qualification flags are not security or legal assurances. See the [current implementation limitations](README.md).
+
 **Document ID:** VSO-SEC-POC-001  
 **Version:** 1.0  
 **Last Updated:** January 2026
@@ -363,8 +365,8 @@ export VCP_ENCRYPTION_KEY="..."  # For at-rest encryption
 | Regulation | Relevant Requirements | Status |
 |------------|----------------------|--------|
 | GDPR | Data minimization, right to erasure | PII not collected |
-| eIDAS | Qualified timestamp requirements | TSA validation supported |
-| SEC 17a-4 | Immutable record retention | Anchor verification provides |
+| eIDAS | Qualified timestamp requirements | TSA validation incomplete; qualified status not established |
+| SEC 17a-4 | Record retention (WORM or audit-trail alternative) | Retention compliance not assessed; external-anchor verification incomplete |
 | MiFID II | Audit trail integrity | Merkle proof verification |
 | DORA | ICT incident reporting | Reporting module support |
 

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Signature verification (Ed25519, RFC 8032)
 - Merkle proof verification (RFC 6962)
 - External anchor verification (TSA/Blockchain)
-- Timing requirements verification (10 jurisdictions)
+- Timing requirements verification (9 jurisdictions)
 - DORA incident reporting support
 - Compliance report generation
 - Multi-jurisdiction compliance checking

@@ -1,6 +1,6 @@
 # Regulatory Mapping for VCP Supervision Node
 
-This document maps regulatory requirements to VCP Supervision Node capabilities across 10 jurisdictions.
+This document maps regulatory requirements to VCP Supervision Node capabilities across 9 jurisdictions. The mapping is design intent; it does not determine regulatory compliance.
 
 ## Document Information
 
@@ -46,11 +46,13 @@ All regulatory references are classified by evidence strength:
 
 ```
 ClockSyncStatus Mapping:
-├── PTP_LOCKED    → <1µs accuracy  → EU/UK HFT compliant
-├── NTP_SYNCED    → <1ms accuracy  → EU/UK Non-HFT compliant
+├── PTP_LOCKED    → <1µs accuracy  → meets the VCP Platinum clock-sync indicator; regulatory compliance not determined
+├── NTP_SYNCED    → <1ms accuracy  → meets the VCP Gold clock-sync indicator; regulatory compliance not determined
 ├── BEST_EFFORT   → Variable       → Warning for regulated entities
 └── UNRELIABLE    → Unknown        → Rejected for all jurisdictions
 ```
+
+Clock-sync status and precision are submitted metadata, not independent clock measurements. The mapping above does not demonstrate achieved accuracy or regulatory compliance.
 
 ### 1.3 Primary Source URLs
 
@@ -79,7 +81,7 @@ ClockSyncStatus Mapping:
 
 ### 2.2 SEC Rule 17a-4 (2022 Amendment)
 
-**Critical Update**: The 2022 amendment (Release 34-94382) explicitly permits audit trail alternatives to WORM:
+**Critical Update**: The 2022 amendment (Release 34-96034) explicitly permits audit trail alternatives to WORM:
 
 > "The rule permits broker-dealers to preserve required records electronically using either write once, read many (WORM) technology or an audit trail alternative."
 
@@ -104,7 +106,7 @@ Integrity Verification:
 
 ### 2.4 Primary Source URLs
 
-- SEC 17a-4 (2022): https://www.sec.gov/rules/final/2022/34-94382.pdf
+- SEC 17a-4 (2022): https://www.sec.gov/files/rules/final/2022/34-96034.pdf
 - eIDAS Art.42: https://eur-lex.europa.eu/eli/reg/2014/910/oj
 
 ---
@@ -239,7 +241,7 @@ AI Act Compliance:
 |---------|-------------|---------------|
 | **Article 41** | Legal effect | TSA anchor |
 | **Article 42** | Qualified timestamp | eIDAS-qualified TSA |
-| **Presumption** | Accuracy of date/time | TSAAnchor.is_eidas_qualified |
+| **Presumption** | Accuracy of date/time | Not established by the PoC's `is_eidas_qualified` flag |
 
 ### 6.2 Legal Presumption
 
@@ -248,14 +250,16 @@ eIDAS Article 41(2):
 
 ### 6.3 VCP Implementation
 
+**Current limitation:** The implementation derives its qualification flags from a caller-supplied boolean and a URL allowlist. It does not validate token signatures, message-imprint binding, or qualified trust-service status. These fields are PoC metadata and do not establish a legal presumption.
+
 ```python
 class TSAAnchor:
-    is_eidas_qualified: bool  # Legal presumption flag
+    is_eidas_qualified: bool  # Caller-supplied claim; not independently validated
     
-# Verification returns legal_presumption status
+# PoC output fields; not verified qualification or a legal conclusion
 result = {
     "is_eidas_qualified": True,
-    "legal_presumption": True  # eIDAS Art.41
+    "legal_presumption": True  # PoC-derived flag only
 }
 ```
 
@@ -347,7 +351,7 @@ Output: VerificationResult
 
 ### 9.3 US Regulations
 
-13. SEC Rule 17a-4: https://www.sec.gov/rules/final/2022/34-94382.pdf
+13. SEC Rule 17a-4: https://www.sec.gov/files/rules/final/2022/34-96034.pdf
 14. CAT NMS Plan: https://www.catnmsplan.com/
 15. Regulation SCI: https://www.sec.gov/rules/final/2014/34-73639.pdf
 16. FINRA Rule 3110: https://www.finra.org/rules-guidance/rulebooks/finra-rules/3110
