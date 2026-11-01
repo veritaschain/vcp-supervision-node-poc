@@ -170,22 +170,12 @@ class JWTAuth(AuthScheme):
         
         token = auth_header[7:]  # Remove "Bearer " prefix
         
-        # TODO: Implement actual JWT validation
-        # This is a placeholder that accepts any token
-        logger.warning(
-            "JWT validation not implemented - accepting all tokens",
-            token_prefix=token[:20] if len(token) > 20 else token,
+        # Never accept a token until signature, issuer, audience and expiry
+        # validation are implemented. This PoC intentionally fails closed.
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="JWT authentication is not implemented; access denied",
         )
-        
-        return {
-            "authenticated": True,
-            "method": "jwt",
-            "identity": "jwt_user",
-            "permissions": ["read", "write"],
-            "token_info": {
-                "note": "JWT validation not implemented in PoC",
-            },
-        }
 
 
 class MTLSAuth(AuthScheme):
@@ -226,23 +216,12 @@ class MTLSAuth(AuthScheme):
                 detail="Missing client certificate",
             )
         
-        # TODO: Implement actual certificate validation
-        # This is a placeholder
-        logger.warning(
-            "mTLS validation not fully implemented",
-            cert_dn=cert_dn,
+        # An untrusted client can supply this header. Until a trusted proxy
+        # identity and certificate validation are configured, deny access.
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="mTLS certificate verification is not implemented; access denied",
         )
-        
-        return {
-            "authenticated": True,
-            "method": "mtls",
-            "identity": cert_dn,
-            "permissions": ["read", "write"],
-            "certificate": {
-                "dn": cert_dn,
-                "note": "mTLS validation not fully implemented in PoC",
-            },
-        }
 
 
 # ============================================================================
