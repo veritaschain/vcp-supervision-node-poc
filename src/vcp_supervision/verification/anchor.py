@@ -134,46 +134,17 @@ class AnchorVerifier:
         self._logger.debug("Verifying TSA anchor", tsa_url=tsa.tsa_url)
         
         try:
-            # Step 1: Decode the TSP response token
-            tsp_token = base64.b64decode(tsa.token)
-            
-            # Step 2: Extract and verify the message imprint
-            # Note: Full ASN.1 parsing would be done with pyasn1/asn1crypto
-            # For PoC, we verify the structure is valid and check trusted TSA
-            
-            # Step 3: Check if TSA is trusted
-            is_trusted = tsa.tsa_url in self.trusted_tsa_urls
-            is_eidas_qualified = tsa.is_eidas_qualified and tsa.tsa_url in self.EIDAS_QUALIFIED_TSAS
-            
-            if not is_trusted:
-                self._logger.warning("TSA not in trusted list", tsa_url=tsa.tsa_url)
-                return {
-                    "status": "WARNING",
-                    "error_code": "TSA_NOT_TRUSTED",
-                    "message": f"TSA {tsa.tsa_url} is not in the trusted list",
-                    "tsa_url": tsa.tsa_url,
-                    "is_eidas_qualified": False,
-                }
-            
-            # Step 4: Verify the message imprint matches our Merkle root
-            # In production, this would parse the TSP response and verify
-            # For PoC, we assume the token was correctly generated
-            
-            self._logger.debug(
-                "TSA anchor verified",
-                tsa_url=tsa.tsa_url,
-                is_eidas_qualified=is_eidas_qualified,
-            )
-            
+            # RFC 3161 token parsing, message-imprint matching, signature
+            # and TSA trust-chain validation are not implemented in this PoC.
+            # Decoding base64 or matching a URL is not verification.
             return {
-                "status": "PASSED",
-                "message": "TSA anchor verification successful",
-                "tsa_url": tsa.tsa_url,
-                "timestamp": str(tsa.timestamp),
-                "is_eidas_qualified": is_eidas_qualified,
-                "legal_presumption": is_eidas_qualified,  # eIDAS Art. 41
+                "status": "FAILED",
+                "error_code": "TSA_VERIFICATION_NOT_IMPLEMENTED",
+                "message": "RFC 3161 TSA verification is not implemented; proof not accepted",
+                "is_eidas_qualified": False,
+                "legal_presumption": False,
             }
-            
+
         except ValueError as e:
             self._logger.error("Invalid TSA token", error=str(e))
             return {
