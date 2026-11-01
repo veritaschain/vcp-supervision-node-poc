@@ -258,7 +258,7 @@ class TestEndToEndVerification:
         assert report.failed_events == 1
         assert report.jurisdiction == "EU"
         assert 0 < report.overall_score < 1
-        assert "MiFID II" in report.regulations_checked
+        assert "MiFID II (2014/65/EU)" in report.regulations_checked
         
         node.close()
 

@@ -260,7 +260,7 @@ class TestMerkleVerifier:
         events = []
         for i in range(5):
             event = VCPEvent(
-                event_id=f"event-{i}",
+                event_id=f"00000000-0000-4000-8000-{i:012x}",
                 timestamp=datetime.now(timezone.utc),
                 timestamp_precision=TimestampPrecision.MILLISECOND,
                 clock_sync_status=ClockSyncStatus.NTP_SYNCED,
@@ -284,7 +284,7 @@ class TestMerkleVerifier:
         events = []
         for i in [0, 1, 3, 4]:
             event = VCPEvent(
-                event_id=f"event-{i}",
+                event_id=f"00000000-0000-4000-8000-{i:012x}",
                 timestamp=datetime.now(timezone.utc),
                 timestamp_precision=TimestampPrecision.MILLISECOND,
                 clock_sync_status=ClockSyncStatus.NTP_SYNCED,
@@ -357,7 +357,7 @@ class TestTimingVerifier:
         base_time = datetime.now(timezone.utc)
         for i in range(3):
             event = VCPEvent(
-                event_id=f"event-{i}",
+                event_id=f"00000000-0000-4000-8000-{i:012x}",
                 timestamp=base_time,
                 timestamp_precision=TimestampPrecision.MILLISECOND,
                 clock_sync_status=ClockSyncStatus.NTP_SYNCED,
@@ -386,8 +386,8 @@ class TestAnchorVerifier:
         
         result = verifier.verify(sample_anchor.merkle_root, sample_anchor)
         
-        assert result["status"] == "PASSED"
-        assert result["tsa_result"]["status"] == "PASSED"
+        assert result["status"] == "FAILED"
+        assert result["tsa_result"]["error_code"] == "TSA_VERIFICATION_NOT_IMPLEMENTED"
     
     def test_verify_tsa_anchor_untrusted(self, sample_anchor):
         """Test warning for untrusted TSA anchor."""
@@ -397,8 +397,8 @@ class TestAnchorVerifier:
         
         result = verifier.verify(sample_anchor.merkle_root, sample_anchor)
         
-        assert result["status"] == "WARNING"
-        assert result["tsa_result"]["error_code"] == "TSA_NOT_TRUSTED"
+        assert result["status"] == "FAILED"
+        assert result["tsa_result"]["error_code"] == "TSA_VERIFICATION_NOT_IMPLEMENTED"
     
     def test_verify_blockchain_anchor(self):
         """Test verification of blockchain anchor."""
@@ -422,8 +422,8 @@ class TestAnchorVerifier:
         verifier = AnchorVerifier(verify_blockchain=False)
         result = verifier.verify(anchor.merkle_root, anchor)
         
-        assert result["status"] == "PASSED"
-        assert result["blockchain_result"]["status"] == "PASSED"
+        assert result["status"] == "FAILED"
+        assert result["blockchain_result"]["error_code"] == "BC_VERIFICATION_NOT_IMPLEMENTED"
 
 
 class TestVerificationEngine:

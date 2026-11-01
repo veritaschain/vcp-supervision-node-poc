@@ -196,40 +196,15 @@ class AnchorVerifier:
                     "message": "Merkle root does not match blockchain anchor",
                 }
             
-            # Step 2: Optionally verify on-chain
-            if self.verify_blockchain and bc.chain in self.blockchain_rpc_urls:
-                online_result = self._verify_blockchain_online(bc)
-                if online_result["status"] != "PASSED":
-                    return online_result
-            
-            # Step 3: Check confirmations for finality
-            min_confirmations = self._get_min_confirmations(bc.chain)
-            if bc.confirmations < min_confirmations:
-                return {
-                    "status": "WARNING",
-                    "error_code": "BC_LOW_CONFIRMATIONS",
-                    "message": f"Only {bc.confirmations} confirmations (min: {min_confirmations})",
-                    "confirmations": bc.confirmations,
-                    "required": min_confirmations,
-                }
-            
-            self._logger.debug(
-                "Blockchain anchor verified",
-                chain=bc.chain,
-                confirmations=bc.confirmations,
-            )
-            
+            # Caller-supplied roots and confirmation counts are not an
+            # authenticated chain commitment. The RPC helper also lacks payload,
+            # canonical-chain and finality validation, so do not accept either path.
             return {
-                "status": "PASSED",
-                "message": "Blockchain anchor verification successful",
-                "chain": bc.chain,
-                "network": bc.network,
-                "transaction_hash": bc.transaction_hash,
-                "block_number": bc.block_number,
-                "block_timestamp": str(bc.block_timestamp),
-                "confirmations": bc.confirmations,
+                "status": "FAILED",
+                "error_code": "BC_VERIFICATION_NOT_IMPLEMENTED",
+                "message": "Blockchain commitment and finality verification are not implemented; proof not accepted",
             }
-            
+
         except Exception as e:
             self._logger.exception("Blockchain verification error")
             return {
@@ -281,10 +256,11 @@ class AnchorVerifier:
                 }
             
             return {
-                "status": "PASSED",
-                "message": "Transaction verified on-chain",
+                "status": "FAILED",
+                "error_code": "BC_COMMITMENT_NOT_VERIFIED",
+                "message": "Transaction existence does not prove its Merkle commitment or finality",
             }
-            
+
         except httpx.HTTPError as e:
             self._logger.warning("RPC request failed", error=str(e))
             return {
@@ -337,7 +313,7 @@ class AnchorVerifier:
             }
         
         # FAILED > WARNING > PASSED
-        if "FAILED" in statuses:
+        if any(status not in ("PASSED", "WARNING") for status in statuses):
             overall_status = "FAILED"
         elif "WARNING" in statuses:
             overall_status = "WARNING"
@@ -352,7 +328,9 @@ class AnchorVerifier:
             "blockchain_result": bc_result,
             "is_dual_anchored": tsa_result is not None and bc_result is not None,
             "has_legal_presumption": (
-                tsa_result is not None and tsa_result.get("is_eidas_qualified", False)
+                tsa_result is not None
+                and tsa_result.get("status") == "PASSED"
+                and tsa_result.get("legal_presumption", False)
             ),
         }
     

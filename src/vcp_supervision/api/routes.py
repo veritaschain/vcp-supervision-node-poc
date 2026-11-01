@@ -156,14 +156,11 @@ if API_AVAILABLE:
     )
     async def health_check(request: Request) -> HealthResponse:
         """Health check endpoint."""
-        node = request.app.state.node
-        stats = node.get_stats() if node else None
-        
         return HealthResponse(
             status="healthy",
             timestamp=datetime.now(timezone.utc).isoformat(),
             version="0.1.0",
-            node_stats=stats,
+            node_stats=None,
         )
     
     
@@ -402,7 +399,7 @@ if API_AVAILABLE:
                 events_verified=total,
                 events_passed=passed,
                 events_failed=failed,
-                completeness_verified=True,  # Would check sequence gaps in production
+                completeness_verified=False,  # Challenge coverage is not implemented
                 overall_score=passed / total if total > 0 else 0.0,
                 details=results,
             )

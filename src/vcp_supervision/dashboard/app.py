@@ -24,6 +24,7 @@ except ImportError:
     DASHBOARD_AVAILABLE = False
 
 if TYPE_CHECKING:
+    from vcp_supervision.api.auth import AuthScheme
     from vcp_supervision.models import ComplianceReport, VerificationResult
     from vcp_supervision.node import SupervisionNode
 
@@ -49,6 +50,7 @@ class ComplianceDashboard:
         host: str = "0.0.0.0",
         port: int = 8080,
         title: str = "VCP Supervision Dashboard",
+        auth_scheme: "AuthScheme | None" = None,
     ) -> None:
         """
         Initialize the compliance dashboard.
@@ -58,6 +60,7 @@ class ComplianceDashboard:
             host: Host to bind to
             port: Port to listen on
             title: Dashboard title
+            auth_scheme: Explicit authentication scheme; default denies requests
         """
         if not DASHBOARD_AVAILABLE:
             raise ImportError(
@@ -69,6 +72,7 @@ class ComplianceDashboard:
         self.host = host
         self.port = port
         self.title = title
+        self.auth_scheme = auth_scheme
         self._logger = logger.bind(component="ComplianceDashboard")
         
         # In-memory storage for results
@@ -85,6 +89,12 @@ class ComplianceDashboard:
             title=self.title,
             description="VCP Supervision Node Compliance Dashboard",
             version="0.1.0",
+        )
+
+        from vcp_supervision.api.auth import APIKeyAuth, AuthMiddleware
+        app.add_middleware(
+            AuthMiddleware,
+            auth_scheme=self.auth_scheme if self.auth_scheme is not None else APIKeyAuth(),
         )
         
         # Register routes

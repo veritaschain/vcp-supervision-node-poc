@@ -103,7 +103,7 @@ class APIKeyAuth(AuthScheme):
             )
         
         if api_key not in self.valid_keys:
-            logger.warning("Invalid API key attempt", key_prefix=api_key[:8])
+            logger.warning("Invalid API key attempt")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid API key",
@@ -167,8 +167,6 @@ class JWTAuth(AuthScheme):
                 detail="Missing or invalid authorization header",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
-        token = auth_header[7:]  # Remove "Bearer " prefix
         
         # Never accept a token until signature, issuer, audience and expiry
         # validation are implemented. This PoC intentionally fails closed.
@@ -253,7 +251,7 @@ def require_permission(permission: str):
         # Get auth context from request state (set by middleware)
         auth_context = getattr(request.state, "auth_context", None)
         
-        if auth_context is None:
+        if auth_context is None or auth_context.get("authenticated") is not True:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authenticated",
@@ -315,16 +313,34 @@ class AuthMiddleware:
         
         try:
             auth_context = await self.auth_scheme.authenticate(request)
-            scope["state"] = {"auth_context": auth_context}
-        except HTTPException:
-            # Re-raise HTTP exceptions
-            raise
+            if auth_context.get("authenticated") is not True:
+                raise HTTPException(status_code=401, detail="Not authenticated")
+            if path.startswith("/admin/"):
+                required_permission = Permission.ADMIN
+            elif scope.get("method") in ("GET", "HEAD", "OPTIONS"):
+                required_permission = Permission.READ
+            else:
+                required_permission = Permission.WRITE
+            permissions = auth_context.get("permissions", [])
+            if required_permission not in permissions and Permission.ADMIN not in permissions:
+                raise HTTPException(status_code=403, detail="Insufficient permissions")
+            scope.setdefault("state", {})["auth_context"] = auth_context
+        except HTTPException as exc:
+            # Middleware runs outside FastAPI's exception handlers.
+            from starlette.responses import JSONResponse
+            await JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+                headers=exc.headers,
+            )(scope, receive, send)
+            return
         except Exception as e:
             logger.exception("Authentication error", error=str(e))
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Authentication error",
-            )
+            from starlette.responses import JSONResponse
+            await JSONResponse(
+                status_code=500, content={"detail": "Authentication error"}
+            )(scope, receive, send)
+            return
         
         await self.app(scope, receive, send)
 
@@ -334,7 +350,7 @@ class AuthMiddleware:
 # ============================================================================
 
 def create_auth_scheme(
-    method: str = "none",
+    method: str = "api_key",
     **kwargs,
 ) -> AuthScheme:
     """

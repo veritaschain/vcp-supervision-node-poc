@@ -21,6 +21,7 @@ except ImportError:
     API_AVAILABLE = False
 
 if TYPE_CHECKING:
+    from vcp_supervision.api.auth import AuthScheme
     from vcp_supervision.node import SupervisionNode
 
 logger = structlog.get_logger(__name__)
@@ -32,6 +33,7 @@ def create_app(
     description: str = "Independent verification infrastructure for VCP-compliant trading logs",
     version: str = "0.1.0",
     cors_origins: list[str] | None = None,
+    auth_scheme: "AuthScheme | None" = None,
 ) -> "FastAPI":
     """
     Create and configure the FastAPI application.
@@ -42,6 +44,7 @@ def create_app(
         description: API description
         version: API version
         cors_origins: Allowed CORS origins (None = no CORS)
+        auth_scheme: Explicit authentication scheme; default denies protected requests
     
     Returns:
         Configured FastAPI application
@@ -95,6 +98,13 @@ def create_app(
     
     # Store node in app state
     app.state.node = node
+
+    # No configured keys means no authenticated users, not anonymous access.
+    from vcp_supervision.api.auth import APIKeyAuth, AuthMiddleware
+    app.add_middleware(
+        AuthMiddleware,
+        auth_scheme=auth_scheme if auth_scheme is not None else APIKeyAuth(),
+    )
     
     # Configure CORS if origins provided
     if cors_origins:
@@ -136,6 +146,7 @@ def run_server(
     reload: bool = False,
     workers: int = 1,
     cors_origins: list[str] | None = None,
+    auth_scheme: "AuthScheme | None" = None,
 ) -> None:
     """
     Run the API server.
@@ -154,7 +165,7 @@ def run_server(
             "Install with: pip install vcp-supervision[api]"
         )
     
-    app = create_app(node=node, cors_origins=cors_origins)
+    app = create_app(node=node, cors_origins=cors_origins, auth_scheme=auth_scheme)
     
     logger.info(
         "Starting API server",
@@ -177,6 +188,7 @@ async def run_server_async(
     host: str = "0.0.0.0",
     port: int = 8080,
     cors_origins: list[str] | None = None,
+    auth_scheme: "AuthScheme | None" = None,
 ) -> None:
     """
     Run the API server asynchronously.
@@ -193,7 +205,7 @@ async def run_server_async(
             "Install with: pip install vcp-supervision[api]"
         )
     
-    app = create_app(node=node, cors_origins=cors_origins)
+    app = create_app(node=node, cors_origins=cors_origins, auth_scheme=auth_scheme)
     
     config = uvicorn.Config(app, host=host, port=port)
     server = uvicorn.Server(config)

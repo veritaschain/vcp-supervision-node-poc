@@ -223,8 +223,8 @@ class VerificationResult(BaseModel):
     
     @property
     def is_compliant(self) -> bool:
-        """Check if the result indicates compliance."""
-        return self.status in (VerificationStatus.PASSED, VerificationStatus.WARNING)
+        """Legacy local-check indicator; does not establish legal compliance."""
+        return self.status == VerificationStatus.PASSED
 
 
 class PublicKeyManifest(BaseModel):
