@@ -45,6 +45,7 @@ class VerificationStatus(str, Enum):
     
     PASSED = "PASSED"              # All checks passed
     FAILED = "FAILED"              # Critical check failed
+    INDETERMINATE = "INDETERMINATE"  # Required trust material/check is unavailable
     WARNING = "WARNING"            # Non-critical issue detected
     TIMEOUT = "TIMEOUT"            # Verification timed out
 
@@ -223,8 +224,8 @@ class VerificationResult(BaseModel):
     
     @property
     def is_compliant(self) -> bool:
-        """Check if the result indicates compliance."""
-        return self.status in (VerificationStatus.PASSED, VerificationStatus.WARNING)
+        """Legacy local-check indicator; does not establish legal compliance."""
+        return self.status == VerificationStatus.PASSED
 
 
 class PublicKeyManifest(BaseModel):
@@ -276,6 +277,7 @@ class ComplianceReport(BaseModel):
     passed_events: int = Field(..., ge=0, description="Events that passed verification")
     failed_events: int = Field(..., ge=0, description="Events that failed verification")
     warning_events: int = Field(..., ge=0, description="Events with warnings")
+    indeterminate_events: int = Field(default=0, ge=0, description="Events without sufficient verification")
     
     # Compliance scores
     overall_score: float = Field(..., ge=0.0, le=1.0, description="Overall compliance score")

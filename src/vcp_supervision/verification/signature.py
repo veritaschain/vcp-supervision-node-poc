@@ -71,16 +71,32 @@ class SignatureVerifier:
         self._logger.debug("Verifying signature", event_id=event.event_id)
         
         try:
+            if event.signature.algorithm != "Ed25519":
+                return {
+                    "status": "INDETERMINATE",
+                    "error_code": "SIG_ALGORITHM_UNSUPPORTED",
+                    "message": "Only Ed25519 signatures are supported",
+                }
             # Step 1: Canonicalize the event for signature verification
             signed_data = self._canonicalize_event(event)
             
             # Step 2: Decode the public key and signature
-            public_key_bytes = base64.b64decode(event.signature.public_key)
-            signature_bytes = base64.b64decode(event.signature.value)
+            public_key_bytes = base64.b64decode(event.signature.public_key, validate=True)
+            signature_bytes = base64.b64decode(event.signature.value, validate=True)
             
             # Step 3: Verify the Ed25519 signature
             public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
             public_key.verify(signature_bytes, signed_data)
+
+            # A valid signature under a self-supplied key does not establish
+            # an authorized signer. Keep observed bad signatures as FAILED.
+            if not self.require_manifest or self.manifest is None:
+                return {
+                    "status": "INDETERMINATE",
+                    "error_code": "MANIFEST_REQUIRED" if self.require_manifest else "KEY_AUTHORIZATION_NOT_CHECKED",
+                    "message": "Signature math passed; trusted signer authorization is not established",
+                    "signature_math_valid": True,
+                }
             
             # Step 4: Check if key is in manifest (if required)
             if self.require_manifest and self.manifest:
@@ -93,7 +109,7 @@ class SignatureVerifier:
                         fingerprint=key_fingerprint,
                     )
                     return {
-                        "status": "FAILED",
+                        "status": "INDETERMINATE",
                         "error_code": "KEY_NOT_AUTHORIZED",
                         "message": "Public key is not in authorized manifest",
                         "fingerprint": key_fingerprint,
@@ -101,6 +117,16 @@ class SignatureVerifier:
                 
                 # Check if key is revoked
                 auth_key = self.manifest.authorized_keys[key_fingerprint]
+                if (
+                    auth_key.fingerprint != key_fingerprint
+                    or auth_key.algorithm != "Ed25519"
+                    or base64.b64decode(auth_key.public_key, validate=True) != public_key_bytes
+                ):
+                    return {
+                        "status": "FAILED",
+                        "error_code": "MANIFEST_KEY_MISMATCH",
+                        "message": "Manifest entry does not match the signing key",
+                    }
                 if auth_key.revoked:
                     self._logger.warning(
                         "Key is revoked",
@@ -114,6 +140,18 @@ class SignatureVerifier:
                         "message": "Public key has been revoked",
                         "fingerprint": key_fingerprint,
                         "revoked_at": str(auth_key.revoked_at),
+                    }
+                if (
+                    event.timestamp < auth_key.valid_from
+                    or (
+                        auth_key.valid_until is not None
+                        and event.timestamp >= auth_key.valid_until
+                    )
+                ):
+                    return {
+                        "status": "FAILED",
+                        "error_code": "KEY_OUTSIDE_VALIDITY",
+                        "message": "Event timestamp is outside the authorized key validity",
                     }
             
             self._logger.debug("Signature valid", event_id=event.event_id)

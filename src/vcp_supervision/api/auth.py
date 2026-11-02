@@ -34,6 +34,9 @@ logger = structlog.get_logger(__name__)
 
 class AuthScheme(ABC):
     """Abstract base class for authentication schemes."""
+
+    def validate_configuration(self) -> None:
+        """Reject unsupported configurations before serving requests."""
     
     @abstractmethod
     async def authenticate(self, request: "Request") -> dict[str, Any]:
@@ -59,6 +62,9 @@ class NoAuth(AuthScheme):
     WARNING: Do not use in production!
     """
     
+    def validate_configuration(self) -> None:
+        logger.warning("Authentication explicitly disabled; development use only")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Always succeeds with anonymous context."""
         return {
@@ -103,7 +109,7 @@ class APIKeyAuth(AuthScheme):
             )
         
         if api_key not in self.valid_keys:
-            logger.warning("Invalid API key attempt", key_prefix=api_key[:8])
+            logger.warning("Invalid API key attempt")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid API key",
@@ -154,6 +160,9 @@ class JWTAuth(AuthScheme):
         if API_AVAILABLE:
             self.bearer = HTTPBearer(auto_error=False)
     
+    def validate_configuration(self) -> None:
+        raise RuntimeError("JWT authentication is not implemented; server startup refused")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Authenticate via JWT bearer token."""
         if not API_AVAILABLE:
@@ -168,24 +177,12 @@ class JWTAuth(AuthScheme):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        token = auth_header[7:]  # Remove "Bearer " prefix
-        
-        # TODO: Implement actual JWT validation
-        # This is a placeholder that accepts any token
-        logger.warning(
-            "JWT validation not implemented - accepting all tokens",
-            token_prefix=token[:20] if len(token) > 20 else token,
+        # Never accept a token until signature, issuer, audience and expiry
+        # validation are implemented. This PoC intentionally fails closed.
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="JWT authentication is not implemented; access denied",
         )
-        
-        return {
-            "authenticated": True,
-            "method": "jwt",
-            "identity": "jwt_user",
-            "permissions": ["read", "write"],
-            "token_info": {
-                "note": "JWT validation not implemented in PoC",
-            },
-        }
 
 
 class MTLSAuth(AuthScheme):
@@ -216,6 +213,9 @@ class MTLSAuth(AuthScheme):
         self.cert_header = cert_header
         self.allowed_subjects = allowed_subjects or []
     
+    def validate_configuration(self) -> None:
+        raise RuntimeError("mTLS authentication is not implemented; server startup refused")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Authenticate via client certificate."""
         cert_dn = request.headers.get(self.cert_header)
@@ -226,23 +226,12 @@ class MTLSAuth(AuthScheme):
                 detail="Missing client certificate",
             )
         
-        # TODO: Implement actual certificate validation
-        # This is a placeholder
-        logger.warning(
-            "mTLS validation not fully implemented",
-            cert_dn=cert_dn,
+        # An untrusted client can supply this header. Until a trusted proxy
+        # identity and certificate validation are configured, deny access.
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="mTLS certificate verification is not implemented; access denied",
         )
-        
-        return {
-            "authenticated": True,
-            "method": "mtls",
-            "identity": cert_dn,
-            "permissions": ["read", "write"],
-            "certificate": {
-                "dn": cert_dn,
-                "note": "mTLS validation not fully implemented in PoC",
-            },
-        }
 
 
 # ============================================================================
@@ -274,7 +263,7 @@ def require_permission(permission: str):
         # Get auth context from request state (set by middleware)
         auth_context = getattr(request.state, "auth_context", None)
         
-        if auth_context is None:
+        if auth_context is None or auth_context.get("authenticated") is not True:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authenticated",
@@ -316,6 +305,7 @@ class AuthMiddleware:
             auth_scheme: Authentication scheme to use
         """
         self.app = app
+        auth_scheme.validate_configuration()
         self.auth_scheme = auth_scheme
     
     async def __call__(self, scope, receive, send):
@@ -336,16 +326,34 @@ class AuthMiddleware:
         
         try:
             auth_context = await self.auth_scheme.authenticate(request)
-            scope["state"] = {"auth_context": auth_context}
-        except HTTPException:
-            # Re-raise HTTP exceptions
-            raise
+            if auth_context.get("authenticated") is not True:
+                raise HTTPException(status_code=401, detail="Not authenticated")
+            if path.startswith("/admin/"):
+                required_permission = Permission.ADMIN
+            elif scope.get("method") in ("GET", "HEAD", "OPTIONS"):
+                required_permission = Permission.READ
+            else:
+                required_permission = Permission.WRITE
+            permissions = auth_context.get("permissions", [])
+            if required_permission not in permissions and Permission.ADMIN not in permissions:
+                raise HTTPException(status_code=403, detail="Insufficient permissions")
+            scope.setdefault("state", {})["auth_context"] = auth_context
+        except HTTPException as exc:
+            # Middleware runs outside FastAPI's exception handlers.
+            from starlette.responses import JSONResponse
+            await JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+                headers=exc.headers,
+            )(scope, receive, send)
+            return
         except Exception as e:
             logger.exception("Authentication error", error=str(e))
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Authentication error",
-            )
+            from starlette.responses import JSONResponse
+            await JSONResponse(
+                status_code=500, content={"detail": "Authentication error"}
+            )(scope, receive, send)
+            return
         
         await self.app(scope, receive, send)
 
@@ -355,7 +363,7 @@ class AuthMiddleware:
 # ============================================================================
 
 def create_auth_scheme(
-    method: str = "none",
+    method: str = "api_key",
     **kwargs,
 ) -> AuthScheme:
     """
@@ -378,4 +386,6 @@ def create_auth_scheme(
     if method not in schemes:
         raise ValueError(f"Unknown auth method: {method}")
     
-    return schemes[method](**kwargs)
+    scheme = schemes[method](**kwargs)
+    scheme.validate_configuration()
+    return scheme

@@ -89,6 +89,7 @@ class SupervisionNode:
             "events_passed": 0,
             "events_failed": 0,
             "events_warning": 0,
+            "events_indeterminate": 0,
             "started_at": datetime.now(timezone.utc),
         }
         
@@ -251,6 +252,7 @@ class SupervisionNode:
         passed = sum(1 for r in results if r.status.value == "PASSED")
         failed = sum(1 for r in results if r.status.value == "FAILED")
         warning = sum(1 for r in results if r.status.value == "WARNING")
+        indeterminate = sum(1 for r in results if r.status.value == "INDETERMINATE")
         
         # Calculate scores
         if total > 0:
@@ -269,10 +271,10 @@ class SupervisionNode:
         # Collect issues
         issues = []
         for result in results:
-            if result.status.value == "FAILED":
+            if result.status.value in ("FAILED", "INDETERMINATE"):
                 issues.append(f"{result.error_code}: {result.message}")
-            for warning in result.warnings:
-                issues.append(f"WARNING: {warning}")
+            for warning_message in result.warnings:
+                issues.append(f"WARNING: {warning_message}")
         
         # Determine regulations checked based on jurisdiction
         regulations = self._get_regulations_for_jurisdiction(jurisdiction)
@@ -285,6 +287,7 @@ class SupervisionNode:
             passed_events=passed,
             failed_events=failed,
             warning_events=warning,
+            indeterminate_events=indeterminate,
             overall_score=round(overall_score, 3),
             integrity_score=round(integrity_score, 3),
             completeness_score=round(completeness_score, 3),
@@ -343,6 +346,8 @@ class SupervisionNode:
             self._stats["events_passed"] += 1
         elif result.status.value == "FAILED":
             self._stats["events_failed"] += 1
+        elif result.status.value == "INDETERMINATE":
+            self._stats["events_indeterminate"] += 1
         else:
             self._stats["events_warning"] += 1
     

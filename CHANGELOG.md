@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security and result corrections — 2026-11-02
+- Label the WorldFirst report as historical AI-assisted research, not an independent assessment or current priority claim.
+- Refuse REST API/dashboard startup with unimplemented JWT or mTLS authentication, and warn on explicit development-only `NoAuth` use.
+- Represent missing signer trust and unimplemented TSA/blockchain verification as `INDETERMINATE`; retain observed cryptographic failures as `FAILED` and preserve failure precedence.
+- Remove unverified legal-presumption fields and expose indeterminate counts in API summaries, reports, CLI JSON, and the dashboard. Clients must treat the new result as not verified.
+- Existing historical feature claims below are not evidence that external-anchor verification or regulatory conformity has been implemented.
+
 ### Added
 - Initial PoC implementation
 - Signature verification (Ed25519, RFC 8032)

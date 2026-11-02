@@ -24,6 +24,7 @@ except ImportError:
     DASHBOARD_AVAILABLE = False
 
 if TYPE_CHECKING:
+    from vcp_supervision.api.auth import AuthScheme
     from vcp_supervision.models import ComplianceReport, VerificationResult
     from vcp_supervision.node import SupervisionNode
 
@@ -49,6 +50,7 @@ class ComplianceDashboard:
         host: str = "0.0.0.0",
         port: int = 8080,
         title: str = "VCP Supervision Dashboard",
+        auth_scheme: "AuthScheme | None" = None,
     ) -> None:
         """
         Initialize the compliance dashboard.
@@ -58,6 +60,7 @@ class ComplianceDashboard:
             host: Host to bind to
             port: Port to listen on
             title: Dashboard title
+            auth_scheme: Explicit authentication scheme; default denies requests
         """
         if not DASHBOARD_AVAILABLE:
             raise ImportError(
@@ -69,6 +72,7 @@ class ComplianceDashboard:
         self.host = host
         self.port = port
         self.title = title
+        self.auth_scheme = auth_scheme
         self._logger = logger.bind(component="ComplianceDashboard")
         
         # In-memory storage for results
@@ -85,6 +89,12 @@ class ComplianceDashboard:
             title=self.title,
             description="VCP Supervision Node Compliance Dashboard",
             version="0.1.0",
+        )
+
+        from vcp_supervision.api.auth import APIKeyAuth, AuthMiddleware
+        app.add_middleware(
+            AuthMiddleware,
+            auth_scheme=self.auth_scheme if self.auth_scheme is not None else APIKeyAuth(),
         )
         
         # Register routes
@@ -201,12 +211,14 @@ class ComplianceDashboard:
         passed = sum(1 for r in self._results if r.get("status") == "PASSED")
         failed = sum(1 for r in self._results if r.get("status") == "FAILED")
         warning = sum(1 for r in self._results if r.get("status") == "WARNING")
+        indeterminate = sum(1 for r in self._results if r.get("status") == "INDETERMINATE")
         
         return {
             "events_verified": total,
             "events_passed": passed,
             "events_failed": failed,
             "events_warning": warning,
+            "events_indeterminate": indeterminate,
             "pass_rate": passed / total if total > 0 else 0.0,
             "active_alerts": sum(
                 1 for a in self._alerts if not a.get("acknowledged")
@@ -272,7 +284,7 @@ class ComplianceDashboard:
     
     <main class="container mx-auto p-6">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-gray-500 text-sm">Total Verified</h3>
                 <p class="text-3xl font-bold text-gray-800">{stats['events_verified']}</p>
@@ -284,6 +296,10 @@ class ComplianceDashboard:
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-gray-500 text-sm">Failed</h3>
                 <p class="text-3xl font-bold text-red-600">{stats['events_failed']}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-500 text-sm">Indeterminate</h3>
+                <p class="text-3xl font-bold text-yellow-600">{stats['events_indeterminate']}</p>
             </div>
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-gray-500 text-sm">Active Alerts</h3>

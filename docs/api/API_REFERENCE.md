@@ -1,6 +1,6 @@
 # VCP Supervision Node API Reference
 
-> **Result scope — 30 October 2026:** `PASSED`, `is_compliant`, compliance scores, and qualification/legal-presumption flags are PoC indicators within incomplete verification paths. They do not establish external-anchor authenticity, qualified trust-service status, or regulatory compliance. `is_compliant` is true for both `PASSED` and `WARNING`; batch completeness/ordering warnings do not change returned per-event results. See the [current implementation limitations](../../README.md).
+> **Result scope — 1 November 2026:** The API and dashboard deny protected access without an explicit authentication scheme. JWT/mTLS and external-anchor verification are unimplemented and reject requests/evidence. `is_compliant` is true only for `PASSED`; it is a legacy local-check indicator, not legal compliance. Batch completeness/ordering failures change returned per-event results to `FAILED`. See the [implementation limits and API-key setup](../../README.md).
 
 ## Overview
 
@@ -201,7 +201,7 @@ result.signature_valid # bool
 result.merkle_valid    # bool
 result.anchor_valid    # bool
 result.timing_valid    # bool
-result.is_compliant    # Property: True if status is PASSED or WARNING
+result.is_compliant    # Legacy property: True only for PASSED; not legal compliance
 result.details         # Full verification details
 ```
 

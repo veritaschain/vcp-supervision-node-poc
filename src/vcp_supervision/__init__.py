@@ -9,8 +9,8 @@ Core Principle: "Verify, Don't Trust"
 """
 
 from vcp_supervision.node import SupervisionNode
-from vcp_supervision.verification import VerificationEngine, VerificationResult
-from vcp_supervision.models import VCPEvent, MerkleProof, AnchorRecord
+from vcp_supervision.verification import VerificationEngine
+from vcp_supervision.models import VCPEvent, MerkleProof, AnchorRecord, VerificationResult
 
 __version__ = "0.1.0"
 __author__ = "VeritasChain Standards Organization"

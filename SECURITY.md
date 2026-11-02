@@ -1,6 +1,6 @@
 # Security Policy
 
-> **Implementation scope — 30 October 2026:** The threat mitigations and production configuration below describe design guidance, not demonstrated production controls. Current TSA verification does not authenticate a token or check its message imprint, blockchain verification does not establish an on-chain commitment to the root, and JWT/mTLS handlers remain placeholders. Result and qualification flags are not security or legal assurances. See the [current implementation limitations](README.md).
+> **Implementation scope — 1 November 2026:** The threat mitigations and production configuration below describe design guidance, not demonstrated production controls. Current TSA verification does not authenticate a token or check its message imprint, blockchain verification does not establish an on-chain commitment to the root, and JWT/mTLS handlers remain placeholders. These paths now reject unverified input. Both API applications deny protected access by default, and manifest, anchor-root, and batch-result boundaries are enforced. Result and qualification flags are not security or legal assurances. See the [current implementation limitations](README.md).
 
 **Document ID:** VSO-SEC-POC-001  
 **Version:** 1.0  

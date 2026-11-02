@@ -195,7 +195,10 @@ class TestEndToEndVerification:
         )
         
         # Check result
-        assert result.signature_valid is True
+        assert result.signature_valid is False
+        assert result.details["signature"]["signature_math_valid"] is True
+        assert result.status.value == "INDETERMINATE"
+        assert result.is_compliant is False
         assert result.merkle_valid is True
         assert result.compliance_score > 0
         
@@ -258,7 +261,7 @@ class TestEndToEndVerification:
         assert report.failed_events == 1
         assert report.jurisdiction == "EU"
         assert 0 < report.overall_score < 1
-        assert "MiFID II" in report.regulations_checked
+        assert "MiFID II (2014/65/EU)" in report.regulations_checked
         
         node.close()
 

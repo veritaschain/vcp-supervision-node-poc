@@ -130,7 +130,7 @@ class VerificationEngine:
         # Perform all verifications
         results = {
             "signature": self.signature_verifier.verify(event),
-            "merkle": self.merkle_verifier.verify(event, proof),
+            "merkle": self.merkle_verifier.verify(event, proof, expected_root=anchor.merkle_root),
             "anchor": self.anchor_verifier.verify(anchor.merkle_root, anchor),
             "timing": self.timing_verifier.verify(event, jurisdiction, entity_type),
         }
@@ -172,6 +172,8 @@ class VerificationEngine:
         """
         if len(events) != len(proofs):
             raise ValueError("Number of events must match number of proofs")
+        if not events:
+            raise ValueError("Cannot verify an empty batch")
         
         self._logger.info(
             "Starting batch verification",
@@ -211,6 +213,20 @@ class VerificationEngine:
                 "Timestamp ordering check failed",
                 error_code=ordering_result.get("error_code"),
             )
+
+        # Batch-wide failures must be visible to callers, not just to logs.
+        batch_checks = {
+            "batch_completeness": completeness_result,
+            "timestamp_ordering": ordering_result,
+        }
+        for result in results:
+            result.details.update(batch_checks)
+            for check in batch_checks.values():
+                if check["status"] != "PASSED":
+                    result.status = VerificationStatus.FAILED
+                    result.error_code = result.error_code or check.get("error_code")
+                    result.message = result.message or check.get("message")
+                    result.compliance_score = 0.0
         
         return results
     
@@ -248,6 +264,8 @@ class VerificationEngine:
         
         if "FAILED" in all_statuses:
             overall_status = VerificationStatus.FAILED
+        elif any(status not in ("PASSED", "WARNING") for status in all_statuses):
+            overall_status = VerificationStatus.INDETERMINATE
         elif "WARNING" in all_statuses:
             overall_status = VerificationStatus.WARNING
         else:
@@ -265,11 +283,13 @@ class VerificationEngine:
         # Determine error code if failed
         error_code = None
         message = None
-        if overall_status == VerificationStatus.FAILED:
+        if overall_status in (VerificationStatus.FAILED, VerificationStatus.INDETERMINATE):
             for component, result in results.items():
-                if result["status"] == "FAILED":
-                    error_code = result.get("error_code")
-                    message = result.get("message")
+                relevant = (result["status"] == "FAILED" if overall_status == VerificationStatus.FAILED
+                            else result["status"] not in ("PASSED", "WARNING"))
+                if relevant:
+                    error_code = result.get("error_code", "VERIFICATION_INCOMPLETE")
+                    message = result.get("message", "A required check did not pass")
                     break
         
         self._logger.info(
@@ -286,8 +306,8 @@ class VerificationEngine:
             message=message,
             signature_valid=sig_status == "PASSED",
             merkle_valid=merkle_status == "PASSED",
-            anchor_valid=anchor_status in ("PASSED", "WARNING"),
-            timing_valid=timing_status in ("PASSED", "WARNING"),
+            anchor_valid=anchor_status == "PASSED",
+            timing_valid=timing_status == "PASSED",
             jurisdiction=jurisdiction,
             compliance_score=score,
             verification_started_at=started_at,

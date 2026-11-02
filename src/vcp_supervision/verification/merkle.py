@@ -102,10 +102,20 @@ class MerkleVerifier:
             # Step 4: Compare with expected root
             if expected_root is not None:
                 if isinstance(expected_root, str):
-                    expected_root = base64.b64decode(expected_root)
+                    expected_root = base64.b64decode(expected_root, validate=True)
                 expected_root_bytes = expected_root
             else:
-                expected_root_bytes = base64.b64decode(proof.root_hash)
+                expected_root_bytes = base64.b64decode(proof.root_hash, validate=True)
+
+            if (
+                len(expected_root_bytes) != 32
+                or base64.b64decode(proof.root_hash, validate=True) != expected_root_bytes
+            ):
+                return {
+                    "status": "FAILED",
+                    "error_code": "MERKLE_ROOT_MISMATCH",
+                    "message": "Proof root does not match the expected SHA-256 root",
+                }
             
             if computed_root != expected_root_bytes:
                 self._logger.error(
@@ -176,15 +186,20 @@ class MerkleVerifier:
                 "message": "Path and directions arrays must have same length",
             }
         
-        # Check expected path length
-        expected_path_length = self._expected_path_length(proof.leaf_index, proof.tree_size)
-        if len(proof.path) != expected_path_length:
-            self._logger.warning(
-                "Unexpected path length",
-                actual=len(proof.path),
-                expected=expected_path_length,
-            )
-            # This is a warning, not a failure, as tree structure may vary
+        # Bind the path shape to the declared RFC 6962 tree size and index.
+        expected_directions = self._expected_directions(proof.leaf_index, proof.tree_size)
+        if proof.directions != expected_directions:
+            return {
+                "status": "FAILED",
+                "error_code": "PROOF_INVALID",
+                "message": "Proof path does not match its leaf index and tree size",
+            }
+        if any(len(base64.b64decode(sibling, validate=True)) != 32 for sibling in proof.path):
+            return {
+                "status": "FAILED",
+                "error_code": "PROOF_INVALID",
+                "message": "Every proof sibling must be a SHA-256 hash",
+            }
         
         return {"status": "PASSED"}
     
@@ -224,7 +239,7 @@ class MerkleVerifier:
         current_hash = leaf_hash
         
         for i, sibling_b64 in enumerate(proof.path):
-            sibling = base64.b64decode(sibling_b64)
+            sibling = base64.b64decode(sibling_b64, validate=True)
             direction = proof.directions[i]
             
             # RFC 6962: Node hash = H(0x01 || left || right)
@@ -288,12 +303,21 @@ class MerkleVerifier:
         Returns:
             Expected number of siblings in the proof
         """
-        if tree_size == 1:
-            return 0
-        
-        # For a balanced tree, path length is ceil(log2(tree_size))
-        import math
-        return math.ceil(math.log2(tree_size))
+        return len(self._expected_directions(leaf_index, tree_size))
+
+    def _expected_directions(self, leaf_index: int, tree_size: int) -> list[str]:
+        """Return sibling positions from leaf to root for the RFC 6962 split."""
+        directions = []
+        while tree_size > 1:
+            split = 1 << ((tree_size - 1).bit_length() - 1)
+            if leaf_index < split:
+                directions.append("RIGHT")
+                tree_size = split
+            else:
+                directions.append("LEFT")
+                leaf_index -= split
+                tree_size -= split
+        return list(reversed(directions))
     
     def verify_batch_completeness(
         self,
@@ -318,6 +342,13 @@ class MerkleVerifier:
             end_seq=end_seq,
             num_events=len(events),
         )
+
+        if end_seq < start_seq or len(events) != end_seq - start_seq + 1:
+            return {
+                "status": "FAILED",
+                "error_code": "SEQUENCE_GAP",
+                "message": "Batch event count does not match its declared sequence range",
+            }
         
         # Sort events by sequence number
         sorted_events = sorted(events, key=lambda e: e.sequence_num)
