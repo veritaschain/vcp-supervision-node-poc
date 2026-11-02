@@ -1,9 +1,11 @@
+> **Historical material — publication correction, 2026-11-02.** This is an archived AI-assisted research compilation, not an independent assessment or a current priority claim. AI research tools are not independent reviewers. The historical confidence, source counts, consensus labels and “world-first” conclusions below have not been independently substantiated and must not be used as current assurances. The current README describes implementation and verification limits.
+
 # Real-Time VCP Supervision Node: World-First Determination Report
 
 **Document ID:** VSO-RESEARCH-WORLDFIRST-001  
 **Version:** 1.0  
 **Date:** January 2026  
-**Classification:** Public Research Compilation  
+**Classification:** Historical AI-assisted compilation; not current substantiation
 **Issuer:** VeritasChain Standards Organization (VSO)
 
 ---
@@ -33,17 +35,17 @@
 
 ## Executive Summary
 
-This report consolidates findings from five independent research investigations conducted to evaluate whether the Real-Time VCP Supervision Node constitutes a "world-first" innovation in the RegTech/SupTech domain. Each investigation was conducted autonomously using distinct methodologies, source prioritization, and analytical frameworks.
+This report consolidates findings from five AI-assisted research runs (not independent reviews) conducted to evaluate whether the Real-Time VCP Supervision Node constitutes a "world-first" innovation in the RegTech/SupTech domain. Each investigation was conducted autonomously using distinct methodologies, source prioritization, and analytical frameworks.
 
-**Unanimous Conclusion:** All five independent research systems concluded that, within the scope of publicly available information, the Real-Time VCP Supervision Node represents a novel application of Merkle-based verification in regulatory supervision, with no direct precedents identified for regulator-side nodes handling anchored Merkle roots and proofs specifically for financial trading logs.
+**Unanimous Conclusion:** All five AI research tools (not independent reviewers) concluded that, within the scope of publicly available information, the Real-Time VCP Supervision Node represents a novel application of Merkle-based verification in regulatory supervision, with no direct precedents identified for regulator-side nodes handling anchored Merkle roots and proofs specifically for financial trading logs.
 
 ---
 
 ## 1. Research Methodology Overview
 
-### 1.1 Independent Research Systems
+### 1.1 AI research tools (not independent reviewers)
 
-Five independent research systems conducted parallel investigations:
+Five AI research tools (not independent reviewers) conducted parallel investigations:
 
 | System | Primary Focus | Source Count | Unique Contribution |
 |--------|---------------|--------------|---------------------|
@@ -287,7 +289,7 @@ To avoid confusion with prior "Supervisory Node" concepts (Boston Fed, etc.), th
 
 ### 6.2 Final Determination
 
-Based on unanimous findings from five independent research systems:
+Based on unanimous findings from five AI research tools (not independent reviewers):
 
 **The Real-Time VCP Supervision Node qualifies as Definition D: World First**
 

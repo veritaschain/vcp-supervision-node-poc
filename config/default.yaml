@@ -76,8 +76,9 @@ dashboard:
   port: 8080
   # Refresh interval for dashboard updates (seconds)
   refresh_interval_seconds: 5
-  # Enable authentication
-  auth_enabled: false
+  # Historical flag; server authentication requires an explicit AuthScheme.
+  # Both API and dashboard deny protected requests without configured keys.
+  auth_enabled: true
   # auth_secret: "your-secret-key"
 
 # Logging settings

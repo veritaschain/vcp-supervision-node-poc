@@ -195,7 +195,10 @@ class TestEndToEndVerification:
         )
         
         # Check result
-        assert result.signature_valid is True
+        assert result.signature_valid is False
+        assert result.details["signature"]["signature_math_valid"] is True
+        assert result.status.value == "INDETERMINATE"
+        assert result.is_compliant is False
         assert result.merkle_valid is True
         assert result.compliance_score > 0
         

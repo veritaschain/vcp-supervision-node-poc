@@ -70,7 +70,7 @@ if API_AVAILABLE:
     
     class VerificationResponse(BaseModel):
         """Verification result response."""
-        status: str = Field(description="Verification status (PASSED, FAILED, WARNING)")
+        status: str = Field(description="Verification status (PASSED, FAILED, INDETERMINATE, WARNING, TIMEOUT)")
         compliance_score: float = Field(description="Compliance score (0.0 to 1.0)")
         error_code: str | None = Field(default=None, description="Error code if failed")
         message: str | None = Field(default=None, description="Human-readable message")
@@ -112,6 +112,7 @@ if API_AVAILABLE:
         events_verified: int
         events_passed: int
         events_failed: int
+        events_indeterminate: int = 0
         completeness_verified: bool
         overall_score: float
         details: list[dict[str, Any]]
@@ -277,6 +278,7 @@ if API_AVAILABLE:
             passed = sum(1 for r in results if r.status.value == "PASSED")
             failed = sum(1 for r in results if r.status.value == "FAILED")
             warning = sum(1 for r in results if r.status.value == "WARNING")
+            indeterminate = sum(1 for r in results if r.status.value == "INDETERMINATE")
             
             return {
                 "batch_id": request.batch_id,
@@ -284,6 +286,7 @@ if API_AVAILABLE:
                 "passed": passed,
                 "failed": failed,
                 "warning": warning,
+                "indeterminate": indeterminate,
                 "pass_rate": passed / total if total > 0 else 0.0,
                 "results": [
                     {
@@ -392,6 +395,7 @@ if API_AVAILABLE:
             total = len(results)
             passed = sum(1 for r in results if r["status"] == "PASSED")
             failed = sum(1 for r in results if r["status"] == "FAILED")
+            indeterminate = sum(1 for r in results if r["status"] == "INDETERMINATE")
             
             return ChallengeVerificationResult(
                 challenge_id=challenge_id,
@@ -399,6 +403,7 @@ if API_AVAILABLE:
                 events_verified=total,
                 events_passed=passed,
                 events_failed=failed,
+                events_indeterminate=indeterminate,
                 completeness_verified=False,  # Challenge coverage is not implemented
                 overall_score=passed / total if total > 0 else 0.0,
                 details=results,

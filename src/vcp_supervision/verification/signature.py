@@ -71,15 +71,9 @@ class SignatureVerifier:
         self._logger.debug("Verifying signature", event_id=event.event_id)
         
         try:
-            if self.require_manifest and self.manifest is None:
-                return {
-                    "status": "FAILED",
-                    "error_code": "MANIFEST_REQUIRED",
-                    "message": "A trusted public key manifest is required",
-                }
             if event.signature.algorithm != "Ed25519":
                 return {
-                    "status": "FAILED",
+                    "status": "INDETERMINATE",
                     "error_code": "SIG_ALGORITHM_UNSUPPORTED",
                     "message": "Only Ed25519 signatures are supported",
                 }
@@ -93,6 +87,16 @@ class SignatureVerifier:
             # Step 3: Verify the Ed25519 signature
             public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
             public_key.verify(signature_bytes, signed_data)
+
+            # A valid signature under a self-supplied key does not establish
+            # an authorized signer. Keep observed bad signatures as FAILED.
+            if not self.require_manifest or self.manifest is None:
+                return {
+                    "status": "INDETERMINATE",
+                    "error_code": "MANIFEST_REQUIRED" if self.require_manifest else "KEY_AUTHORIZATION_NOT_CHECKED",
+                    "message": "Signature math passed; trusted signer authorization is not established",
+                    "signature_math_valid": True,
+                }
             
             # Step 4: Check if key is in manifest (if required)
             if self.require_manifest and self.manifest:
@@ -105,7 +109,7 @@ class SignatureVerifier:
                         fingerprint=key_fingerprint,
                     )
                     return {
-                        "status": "FAILED",
+                        "status": "INDETERMINATE",
                         "error_code": "KEY_NOT_AUTHORIZED",
                         "message": "Public key is not in authorized manifest",
                         "fingerprint": key_fingerprint,

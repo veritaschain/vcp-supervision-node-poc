@@ -138,11 +138,10 @@ class AnchorVerifier:
             # and TSA trust-chain validation are not implemented in this PoC.
             # Decoding base64 or matching a URL is not verification.
             return {
-                "status": "FAILED",
+                "status": "INDETERMINATE",
                 "error_code": "TSA_VERIFICATION_NOT_IMPLEMENTED",
                 "message": "RFC 3161 TSA verification is not implemented; proof not accepted",
-                "is_eidas_qualified": False,
-                "legal_presumption": False,
+                "qualification_status": "NOT_VERIFIED",
             }
 
         except ValueError as e:
@@ -200,7 +199,7 @@ class AnchorVerifier:
             # authenticated chain commitment. The RPC helper also lacks payload,
             # canonical-chain and finality validation, so do not accept either path.
             return {
-                "status": "FAILED",
+                "status": "INDETERMINATE",
                 "error_code": "BC_VERIFICATION_NOT_IMPLEMENTED",
                 "message": "Blockchain commitment and finality verification are not implemented; proof not accepted",
             }
@@ -229,7 +228,7 @@ class AnchorVerifier:
         rpc_url = self.blockchain_rpc_urls.get(bc_anchor.chain)
         if not rpc_url:
             return {
-                "status": "WARNING",
+                "status": "INDETERMINATE",
                 "error_code": "BC_NO_RPC",
                 "message": f"No RPC URL configured for {bc_anchor.chain}",
             }
@@ -256,7 +255,7 @@ class AnchorVerifier:
                 }
             
             return {
-                "status": "FAILED",
+                "status": "INDETERMINATE",
                 "error_code": "BC_COMMITMENT_NOT_VERIFIED",
                 "message": "Transaction existence does not prove its Merkle commitment or finality",
             }
@@ -264,7 +263,7 @@ class AnchorVerifier:
         except httpx.HTTPError as e:
             self._logger.warning("RPC request failed", error=str(e))
             return {
-                "status": "WARNING",
+                "status": "INDETERMINATE",
                 "error_code": "BC_RPC_ERROR",
                 "message": f"Could not verify on-chain: {e}",
             }
@@ -307,14 +306,16 @@ class AnchorVerifier:
         
         if not statuses:
             return {
-                "status": "FAILED",
+                "status": "INDETERMINATE",
                 "error_code": "NO_ANCHOR",
                 "message": "No anchor data to verify",
             }
         
-        # FAILED > WARNING > PASSED
-        if any(status not in ("PASSED", "WARNING") for status in statuses):
+        # An observed contradiction remains a failure even with missing checks.
+        if "FAILED" in statuses:
             overall_status = "FAILED"
+        elif any(status not in ("PASSED", "WARNING") for status in statuses):
+            overall_status = "INDETERMINATE"
         elif "WARNING" in statuses:
             overall_status = "WARNING"
         else:
@@ -327,11 +328,6 @@ class AnchorVerifier:
             "tsa_result": tsa_result,
             "blockchain_result": bc_result,
             "is_dual_anchored": tsa_result is not None and bc_result is not None,
-            "has_legal_presumption": (
-                tsa_result is not None
-                and tsa_result.get("status") == "PASSED"
-                and tsa_result.get("legal_presumption", False)
-            ),
         }
     
     def close(self) -> None:

@@ -166,7 +166,8 @@ class TestSignatureVerifier:
         verifier = SignatureVerifier(manifest=None, require_manifest=False)
         result = verifier.verify(sample_event)
         
-        assert result["status"] == "PASSED"
+        assert result["status"] == "INDETERMINATE"
+        assert result["signature_math_valid"] is True
     
     def test_verify_key_not_in_manifest(self, sample_event):
         """Test verification when key is not in manifest."""
@@ -181,7 +182,7 @@ class TestSignatureVerifier:
         verifier = SignatureVerifier(manifest=empty_manifest)
         result = verifier.verify(sample_event)
         
-        assert result["status"] == "FAILED"
+        assert result["status"] == "INDETERMINATE"
         assert result["error_code"] == "KEY_NOT_AUTHORIZED"
     
     def test_verify_invalid_signature(self, sample_event, sample_manifest):
@@ -386,7 +387,7 @@ class TestAnchorVerifier:
         
         result = verifier.verify(sample_anchor.merkle_root, sample_anchor)
         
-        assert result["status"] == "FAILED"
+        assert result["status"] == "INDETERMINATE"
         assert result["tsa_result"]["error_code"] == "TSA_VERIFICATION_NOT_IMPLEMENTED"
     
     def test_verify_tsa_anchor_untrusted(self, sample_anchor):
@@ -397,7 +398,7 @@ class TestAnchorVerifier:
         
         result = verifier.verify(sample_anchor.merkle_root, sample_anchor)
         
-        assert result["status"] == "FAILED"
+        assert result["status"] == "INDETERMINATE"
         assert result["tsa_result"]["error_code"] == "TSA_VERIFICATION_NOT_IMPLEMENTED"
     
     def test_verify_blockchain_anchor(self):
@@ -422,7 +423,7 @@ class TestAnchorVerifier:
         verifier = AnchorVerifier(verify_blockchain=False)
         result = verifier.verify(anchor.merkle_root, anchor)
         
-        assert result["status"] == "FAILED"
+        assert result["status"] == "INDETERMINATE"
         assert result["blockchain_result"]["error_code"] == "BC_VERIFICATION_NOT_IMPLEMENTED"
 
 

@@ -3,8 +3,8 @@
 > - This is first-party proof-of-concept code by VeritasChain Co., Ltd., which operates the VeritasChain Standards Organization (VSO). It targets VCP v1.1. VCP v1.1 has no tagged release and is superseded by VCP v1.2 (Released, tag `v1.2.0`).
 > - Conformance to any VCP tier, or to VAP, has not been independently established. There are zero external implementations of VAP or any of its profiles, including VCP.
 > - Not certified. VSO does not issue certifications itself. The certification scheme requires a Conformity Assessment Body (CAB) independent of the scheme owner; the only registered CAB, VeritasChain Co., Ltd., is not independent (VAP v1.2 ERRATA E-2026-10-21).
-> - **External-anchor verification is disabled until implemented.** TSA tokens and blockchain records return `FAILED` with a specific `*_VERIFICATION_NOT_IMPLEMENTED` error. URL matching, self-reported roots/confirmations, and transaction existence do not establish an authenticated commitment. No qualified-timestamp or legal-presumption status is granted.
-> - **Authentication fails closed.** JWT and mTLS placeholders reject requests. The REST API and dashboard install authentication middleware and deny protected access by default; configure `APIKeyAuth` explicitly. Read/write permissions are enforced, and REST `/admin/` routes require `admin`. Public REST liveness endpoints do not expose node statistics.
+> - **External-anchor verification is disabled until implemented.** TSA tokens and unverified blockchain commitments return `INDETERMINATE` with a specific `*_VERIFICATION_NOT_IMPLEMENTED` error. An observed root mismatch remains `FAILED`. URL matching, self-reported roots/confirmations, and transaction existence do not establish an authenticated commitment. No qualified-timestamp or legal-presumption field is issued.
+> - **Authentication fails closed.** Configuring the unimplemented JWT or mTLS scheme prevents REST API/dashboard startup. Their direct request methods also deny access. The REST API and dashboard install authentication middleware and deny protected access by default; configure `APIKeyAuth` explicitly. Read/write permissions are enforced, and REST `/admin/` routes require `admin`. Public REST liveness endpoints do not expose node statistics.
 > - **Result scope.** `PASSED`, `is_compliant`, scores, and regulatory-alignment tables are local indicators or design intent, not regulatory compliance findings. `WARNING`, timeouts, and unknown component statuses are not successful verification. The default signature verifier requires a configured trusted manifest; it also checks revocation, key identity, and event-time validity.
 > - **Batch checks.** Sequence-range completeness and timestamp-ordering failures mark all returned event results `FAILED`. Inclusion proofs are bound to the anchor root and to their declared leaf index/tree size. These checks do not establish capture of all real-world activity; challenge coverage is still unimplemented and reports `completeness_verified: false`.
 
@@ -87,13 +87,13 @@ result = node.verify_event(
     anchor_record=anchor_data
 )
 
-print(f"Verification Status: {result.status}")  # PASSED, FAILED, WARNING
+print(f"Verification Status: {result.status}")  # PASSED, FAILED, INDETERMINATE, WARNING, TIMEOUT
 print(f"Compliance Score: {result.score}")
 ```
 
 ### API and dashboard authentication
 
-Protected routes deny requests until an authentication scheme is configured. JWT and mTLS are placeholders and always deny access. For a local API-key deployment:
+Protected routes deny requests until an authentication scheme is configured. JWT and mTLS are placeholders and refuse server startup. For a local API-key deployment:
 
 ```python
 import os
@@ -111,7 +111,9 @@ app = create_app(node=node, auth_scheme=auth)
 
 Send the key in `X-API-Key`. Grant `admin` only to a separate operator key when administrative access is required. `ComplianceDashboard(..., auth_scheme=auth)` and the server runners accept the same explicit scheme. `NoAuth` remains an explicit development-only opt-in; it must not be exposed to untrusted clients. The historical dashboard `auth_enabled` YAML flag does not configure either server.
 
-A manifest must be supplied through `SupervisionNode(manifest=...)` or the engine before authorized-key checks can pass. `require_manifest=False` explicitly requests only signature-math checks and does not establish signer authorization. Manifest provenance and secure distribution remain the caller's responsibility.
+A manifest must be supplied through `SupervisionNode(manifest=...)` or the engine before authorized-key checks can pass. Missing manifests and unregistered keys return `INDETERMINATE`; revoked, mismatched or invalid signatures remain `FAILED`. `require_manifest=False` requests only signature-math checks: successful math is reported as `signature_math_valid: true` with `INDETERMINATE`, never authorized success. Manifest provenance and secure distribution remain the caller's responsibility.
+
+`INDETERMINATE` is a distinct serialized result and is counted separately in API summaries, reports and the dashboard. It never sets `is_compliant`, `signature_valid` or `anchor_valid` to true for an unavailable check. Consumers that enumerate statuses must handle this value as not verified. Explicit `NoAuth` startup emits a development-only warning; the sample YAML now sets the historical `auth_enabled` flag to true, but the explicit authentication scheme controls actual access.
 
 ### Running the Dashboard
 

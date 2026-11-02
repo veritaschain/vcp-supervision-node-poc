@@ -154,6 +154,7 @@ def cmd_report(args: argparse.Namespace) -> int:
             "passed_events": report.passed_events,
             "failed_events": report.failed_events,
             "warning_events": report.warning_events,
+            "indeterminate_events": report.indeterminate_events,
             "overall_score": report.overall_score,
             "integrity_score": report.integrity_score,
             "completeness_score": report.completeness_score,

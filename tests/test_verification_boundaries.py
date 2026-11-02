@@ -25,7 +25,7 @@ from vcp_supervision.verification.signature import SignatureVerifier
 
 def test_required_manifest_cannot_be_absent(sample_vcp_event):
     result = SignatureVerifier().verify(sample_vcp_event)
-    assert result["status"] == "FAILED"
+    assert result["status"] == "INDETERMINATE"
     assert result["error_code"] == "MANIFEST_REQUIRED"
 
 
@@ -44,7 +44,8 @@ def test_manifest_does_not_authorize_mismatched_or_inactive_keys(
         entry.valid_until = sample_vcp_event.timestamp
     else:
         entry.public_key = base64.b64encode(b"x" * 32).decode()
-    assert SignatureVerifier(public_key_manifest).verify(sample_vcp_event)["status"] == "FAILED"
+    expected = "INDETERMINATE" if mutation == "algorithm" else "FAILED"
+    assert SignatureVerifier(public_key_manifest).verify(sample_vcp_event)["status"] == expected
 
 
 def test_valid_authorized_signature_still_passes(sample_vcp_event, public_key_manifest):
@@ -74,8 +75,8 @@ def test_self_reported_blockchain_commitment_never_passes(sample_anchor, online)
         direct = verifier._verify_blockchain_online(anchor.blockchain_anchor)
     finally:
         verifier.close()
-    assert result["status"] == "FAILED"
-    assert result["has_legal_presumption"] is False
+    assert result["status"] == "INDETERMINATE"
+    assert "has_legal_presumption" not in result
     assert direct["status"] != "PASSED"
 
 
@@ -108,7 +109,7 @@ def test_valid_odd_tree_path_and_index_binding(sample_vcp_event):
     assert verifier.verify(sample_vcp_event, proof)["status"] == "FAILED"
 
 
-@pytest.mark.parametrize("component_status", ["WARNING", "TIMEOUT", "UNKNOWN"])
+@pytest.mark.parametrize("component_status", ["WARNING", "TIMEOUT", "UNKNOWN", "INDETERMINATE"])
 def test_incomplete_checks_are_not_success(sample_vcp_event, component_status):
     results = {name: {"status": "PASSED"} for name in ("signature", "merkle", "anchor", "timing")}
     results["anchor"] = {"status": component_status}
@@ -154,8 +155,9 @@ def test_default_app_denies_protected_routes(path):
     (MTLSAuth(), {"X-Client-Cert-DN": "CN=arbitrary"}),
 ])
 def test_placeholder_auth_rejected_through_real_app(scheme, headers):
-    with TestClient(create_app(auth_scheme=scheme)) as client:
-        assert client.get("/admin/config", headers=headers).status_code == 501
+    with pytest.raises(RuntimeError, match="server startup refused"):
+        with TestClient(create_app(auth_scheme=scheme)):
+            pytest.fail("Unsupported authentication must not start the application")
 
 
 def test_api_key_permissions_enforced_before_route_handler():

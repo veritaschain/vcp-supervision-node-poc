@@ -262,8 +262,10 @@ class VerificationEngine:
         # Determine overall status
         all_statuses = [sig_status, merkle_status, anchor_status, timing_status]
         
-        if any(status not in ("PASSED", "WARNING") for status in all_statuses):
+        if "FAILED" in all_statuses:
             overall_status = VerificationStatus.FAILED
+        elif any(status not in ("PASSED", "WARNING") for status in all_statuses):
+            overall_status = VerificationStatus.INDETERMINATE
         elif "WARNING" in all_statuses:
             overall_status = VerificationStatus.WARNING
         else:
@@ -281,9 +283,11 @@ class VerificationEngine:
         # Determine error code if failed
         error_code = None
         message = None
-        if overall_status == VerificationStatus.FAILED:
+        if overall_status in (VerificationStatus.FAILED, VerificationStatus.INDETERMINATE):
             for component, result in results.items():
-                if result["status"] not in ("PASSED", "WARNING"):
+                relevant = (result["status"] == "FAILED" if overall_status == VerificationStatus.FAILED
+                            else result["status"] not in ("PASSED", "WARNING"))
+                if relevant:
                     error_code = result.get("error_code", "VERIFICATION_INCOMPLETE")
                     message = result.get("message", "A required check did not pass")
                     break

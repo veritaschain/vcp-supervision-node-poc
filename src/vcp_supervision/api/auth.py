@@ -34,6 +34,9 @@ logger = structlog.get_logger(__name__)
 
 class AuthScheme(ABC):
     """Abstract base class for authentication schemes."""
+
+    def validate_configuration(self) -> None:
+        """Reject unsupported configurations before serving requests."""
     
     @abstractmethod
     async def authenticate(self, request: "Request") -> dict[str, Any]:
@@ -59,6 +62,9 @@ class NoAuth(AuthScheme):
     WARNING: Do not use in production!
     """
     
+    def validate_configuration(self) -> None:
+        logger.warning("Authentication explicitly disabled; development use only")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Always succeeds with anonymous context."""
         return {
@@ -154,6 +160,9 @@ class JWTAuth(AuthScheme):
         if API_AVAILABLE:
             self.bearer = HTTPBearer(auto_error=False)
     
+    def validate_configuration(self) -> None:
+        raise RuntimeError("JWT authentication is not implemented; server startup refused")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Authenticate via JWT bearer token."""
         if not API_AVAILABLE:
@@ -204,6 +213,9 @@ class MTLSAuth(AuthScheme):
         self.cert_header = cert_header
         self.allowed_subjects = allowed_subjects or []
     
+    def validate_configuration(self) -> None:
+        raise RuntimeError("mTLS authentication is not implemented; server startup refused")
+
     async def authenticate(self, request: "Request") -> dict[str, Any]:
         """Authenticate via client certificate."""
         cert_dn = request.headers.get(self.cert_header)
@@ -293,6 +305,7 @@ class AuthMiddleware:
             auth_scheme: Authentication scheme to use
         """
         self.app = app
+        auth_scheme.validate_configuration()
         self.auth_scheme = auth_scheme
     
     async def __call__(self, scope, receive, send):
@@ -373,4 +386,6 @@ def create_auth_scheme(
     if method not in schemes:
         raise ValueError(f"Unknown auth method: {method}")
     
-    return schemes[method](**kwargs)
+    scheme = schemes[method](**kwargs)
+    scheme.validate_configuration()
+    return scheme

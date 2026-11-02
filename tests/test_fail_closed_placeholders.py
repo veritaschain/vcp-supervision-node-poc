@@ -37,5 +37,6 @@ def test_tsa_placeholder_never_passes(sample_anchor, token):
         result = verifier.verify(sample_anchor.merkle_root, sample_anchor)
     finally:
         verifier.close()
-    assert result["status"] != "PASSED"
-    assert result["has_legal_presumption"] is False
+    assert result["status"] == "INDETERMINATE"
+    assert "has_legal_presumption" not in result
+    assert "legal_presumption" not in result["tsa_result"]
