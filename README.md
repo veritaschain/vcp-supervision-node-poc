@@ -355,7 +355,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 - [VCP Specification](https://github.com/veritaschain/vcp-spec) - VeritasChain Protocol specification
 - [VCP SDK](https://github.com/veritaschain/vcp-sdk) - SDK for VCP implementation
-- [VCP Explorer](https://github.com/veritaschain/vcp-explorer) - Web-based VCP event explorer
+- [VCP Explorer GUI](https://github.com/veritaschain/vcp-explorer-gui) - Demo web UI; see its README for data and verification limits
 
 ## References
 

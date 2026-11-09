@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
 
 ### Security and result corrections — 2026-11-02
 - Label the WorldFirst report as historical AI-assisted research, not an independent assessment or current priority claim.
@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Canada: NI 23-103, UMIR
 - Switzerland: FINMA Circular 2013/8
 
-## [0.1.0] - 2026-01-26
+## 0.1.0 - 2026-01-26
 
 ### Added
 - Initial release of VCP Supervision Node PoC
@@ -82,8 +82,3 @@ This is the initial release. No migration required.
 ## Deprecation Notices
 
 None.
-
----
-
-[Unreleased]: https://github.com/veritaschain/vcp-supervision-poc/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/veritaschain/vcp-supervision-poc/releases/tag/v0.1.0

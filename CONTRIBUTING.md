@@ -29,8 +29,8 @@ Before creating an issue, please check existing issues to avoid duplicates. When
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/vcp-supervision-poc.git
-cd vcp-supervision-poc
+git clone https://github.com/YOUR_USERNAME/vcp-supervision-node-poc.git
+cd vcp-supervision-node-poc
 
 # Create virtual environment
 python -m venv venv
@@ -187,7 +187,7 @@ When contributing features related to regulatory compliance:
 
 ## Questions?
 
-- Open a [Discussion](https://github.com/veritaschain/vcp-supervision-poc/discussions)
+- Open an [issue](https://github.com/veritaschain/vcp-supervision-node-poc/issues)
 - Email: technical@veritaschain.org
 
 ## License
