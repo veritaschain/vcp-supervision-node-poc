@@ -8,7 +8,7 @@ This document maps regulatory requirements to VCP Supervision Node capabilities 
 |-------|-------|
 | Document ID | VSO-POC-REGMAP-001 |
 | Version | 1.0 |
-| Date | January 2026 |
+| Date | January 2026; AI Act timing correction 10 November 2026 |
 | Status | Reference Document |
 
 ## Evidence Grade Classification
@@ -324,8 +324,15 @@ Output: VerificationResult
 |-------------|----------|--------|
 | DORA RTS/ITS Final | Published | Timeframe confirmation |
 | UK PS21/3 Full Application | 2025-03-31 | 72h deadline active |
-| AI Act High-Risk Application | 2026-08-02 | Art.12 enforcement |
+| AI Act high-risk requirements — Article 6(2) / Annex III | 2027-12-02 | Chapter III, Sections 1–3, except Article 6(5); applicability requires classification |
+| AI Act high-risk requirements — Article 6(1) / Annex I | 2028-08-02 | Chapter III, Sections 1–3, except Article 6(5); applicability requires classification |
 | ASIC CP386 Final | 2026-03 | AI-specific requirements |
+
+**AI Act timing correction — 10 November 2026:** the dates above follow
+[Regulation (EU) 2026/1744, Article 1(40)(b)](https://eur-lex.europa.eu/eli/reg/2026/1744/oj),
+which amends Article 113(c) of the AI Act. They do not postpone every provision
+of the Act or establish that a trading system is high-risk. Other rows in this
+historical mapping have not been revalidated by this correction.
 
 ---
 
