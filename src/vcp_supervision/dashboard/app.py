@@ -41,7 +41,8 @@ class ComplianceDashboard:
     - Alert management
     - DORA reporting status
     
-    Requires optional dependencies: pip install vcp-supervision[dashboard]
+    Requires optional dependencies from the repository checkout:
+        python -m pip install -e '.[dashboard]'
     """
     
     def __init__(
@@ -65,7 +66,7 @@ class ComplianceDashboard:
         if not DASHBOARD_AVAILABLE:
             raise ImportError(
                 "Dashboard dependencies not installed. "
-                "Install with: pip install vcp-supervision[dashboard]"
+                "From the repository checkout, run: python -m pip install -e '.[dashboard]'"
             )
         
         self.node = node

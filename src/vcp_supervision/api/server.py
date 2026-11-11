@@ -52,7 +52,7 @@ def create_app(
     if not API_AVAILABLE:
         raise ImportError(
             "API dependencies not installed. "
-            "Install with: pip install vcp-supervision[api]"
+            "From the repository checkout, run: python -m pip install -e '.[api]'"
         )
     
     @asynccontextmanager
@@ -162,7 +162,7 @@ def run_server(
     if not API_AVAILABLE:
         raise ImportError(
             "API dependencies not installed. "
-            "Install with: pip install vcp-supervision[api]"
+            "From the repository checkout, run: python -m pip install -e '.[api]'"
         )
     
     app = create_app(node=node, cors_origins=cors_origins, auth_scheme=auth_scheme)
@@ -202,7 +202,7 @@ async def run_server_async(
     if not API_AVAILABLE:
         raise ImportError(
             "API dependencies not installed. "
-            "Install with: pip install vcp-supervision[api]"
+            "From the repository checkout, run: python -m pip install -e '.[api]'"
         )
     
     app = create_app(node=node, cors_origins=cors_origins, auth_scheme=auth_scheme)

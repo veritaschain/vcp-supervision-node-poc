@@ -64,12 +64,19 @@ VCP Model:
 git clone https://github.com/veritaschain/vcp-supervision-node-poc.git
 cd vcp-supervision-node-poc
 
-# Install dependencies
-pip install -e .
+# Install from this source checkout
+python -m pip install -e .
 
-# Or using poetry
-poetry install
+# Optional API or dashboard dependencies
+python -m pip install -e '.[api]'
+python -m pip install -e '.[dashboard]'
 ```
+
+These commands install the checked-out source, including the extras defined in
+`pyproject.toml`. They do not depend on a published `vcp-supervision` package.
+Run them from this repository's root with the same Python environment used to
+run the application. See the startup/authentication limits above before serving
+the PoC.
 
 ### Basic Usage
 

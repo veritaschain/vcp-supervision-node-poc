@@ -5,11 +5,11 @@ Example: Basic VCP Event Verification
 This example demonstrates how to use the VCP Supervision Node
 to verify a single VCP event with its Merkle proof and anchor.
 
-Requirements:
-    pip install vcp-supervision
+Requirements (from the vcp-supervision-node-poc source checkout):
+    python -m pip install -e .
 
 Usage:
-    python basic_verification.py
+    python examples/basic_verification.py
 """
 
 from __future__ import annotations
