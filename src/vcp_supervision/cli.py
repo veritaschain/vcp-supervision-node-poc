@@ -185,7 +185,7 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
         from vcp_supervision.dashboard import ComplianceDashboard
     except ImportError:
         print("Dashboard dependencies not installed.")
-        print("Install with: pip install vcp-supervision[dashboard]")
+        print("From the repository checkout, run: python -m pip install -e '.[dashboard]'")
         return 1
     
     node = SupervisionNode(config_path=args.config)

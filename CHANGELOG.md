@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Source installation guidance — 2026-11-11
+- Replace package-index installation examples and missing-dependency hints with commands run from the checked-out repository.
+- Define the `api` extra for FastAPI/uvicorn; the previous hint named an extra that was not declared.
+- Keep the PoC's authentication and verification limitations unchanged; source installation does not establish a published package release.
+
 ### Security and result corrections — 2026-11-02
 - Label the WorldFirst report as historical AI-assisted research, not an independent assessment or current priority claim.
 - Refuse REST API/dashboard startup with unimplemented JWT or mTLS authentication, and warn on explicit development-only `NoAuth` use.
