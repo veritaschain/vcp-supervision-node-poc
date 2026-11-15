@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,8 @@ from vcp_supervision.models import (
     AnchorRecord,
     MerkleProof,
     VCPEvent,
+    VerificationResult,
+    VerificationStatus,
 )
 
 logger = structlog.get_logger(__name__)
@@ -27,11 +30,10 @@ logger = structlog.get_logger(__name__)
 
 def setup_logging(verbose: bool = False) -> None:
     """Configure structured logging."""
-    level = "DEBUG" if verbose else "INFO"
+    level = logging.DEBUG if verbose else logging.INFO
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(structlog, level.upper())
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         processors=[
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.add_log_level,
@@ -72,12 +74,12 @@ def cmd_verify(args: argparse.Namespace) -> int:
                 entity_type=args.entity_type,
             )
             
+            # Retain the actual component verdicts and diagnostic context.
+            # ``score`` remains an alias for consumers of older CLI output.
             results.append({
+                **result.model_dump(mode="json"),
                 "event_id": event.event_id,
-                "status": result.status.value,
                 "score": result.compliance_score,
-                "error_code": result.error_code,
-                "elapsed_seconds": result.elapsed_seconds,
             })
             
             # Print result
@@ -95,9 +97,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
         total = len(results)
         passed = sum(1 for r in results if r["status"] == "PASSED")
         failed = sum(1 for r in results if r["status"] == "FAILED")
+        unverified = total - passed - failed
         
         print(f"\n--- Summary ---")
-        print(f"Total: {total}, Passed: {passed}, Failed: {failed}")
+        print(f"Total: {total}, Passed: {passed}, Failed: {failed}, Unverified: {unverified}")
         print(f"Pass Rate: {passed/total*100:.1f}%" if total > 0 else "N/A")
         
         # Output results if requested
@@ -106,10 +109,40 @@ def cmd_verify(args: argparse.Namespace) -> int:
                 json.dump(results, f, indent=2)
             print(f"\nResults written to {args.output}")
         
-        return 0 if failed == 0 else 1
+        if failed:
+            return 1
+        return 0 if total > 0 and passed == total else 2
         
     finally:
         node.close()
+
+
+_COMPONENT_FIELDS = ("signature_valid", "merkle_valid", "anchor_valid", "timing_valid")
+
+
+def _restore_result(record: Any) -> VerificationResult:
+    """Restore saved results without promoting missing checks to success."""
+    if not isinstance(record, dict):
+        raise ValueError("Each saved result must be a JSON object")
+    data = dict(record)
+    if "compliance_score" not in data and "score" in data:
+        data["compliance_score"] = data["score"]
+    for field in _COMPONENT_FIELDS:
+        value = data.get(field)
+        if value is not None and type(value) is not bool:
+            raise ValueError(f"{field} must be a boolean or null")
+    result = VerificationResult.model_validate(data)
+    if result.status == VerificationStatus.PASSED:
+        components = [getattr(result, field) for field in _COMPONENT_FIELDS]
+        if any(value is False for value in components):
+            result.status = VerificationStatus.FAILED
+            result.error_code = "RESULT_CHECKS_CONFLICT"
+            result.message = "Saved PASSED status conflicts with a failed component check"
+        elif any(value is None for value in components):
+            result.status = VerificationStatus.INDETERMINATE
+            result.error_code = "RESULT_CHECKS_INCOMPLETE"
+            result.message = "Saved PASSED status lacks complete component results"
+    return result
 
 
 def cmd_report(args: argparse.Namespace) -> int:
@@ -123,21 +156,9 @@ def cmd_report(args: argparse.Namespace) -> int:
         with open(args.results) as f:
             results_data = json.load(f)
         
-        # This is a simplified version - in production, you'd
-        # reconstruct VerificationResult objects
-        from vcp_supervision.models import VerificationResult, VerificationStatus
-        
-        results = []
-        for r in results_data:
-            result = VerificationResult(
-                status=VerificationStatus(r["status"]),
-                compliance_score=r.get("score", 0.0),
-                signature_valid=r.get("signature_valid", True),
-                merkle_valid=r.get("merkle_valid", True),
-                anchor_valid=r.get("anchor_valid", True),
-                timing_valid=r.get("timing_valid", True),
-            )
-            results.append(result)
+        if not isinstance(results_data, list):
+            raise ValueError("Saved verification results must be a JSON array")
+        results = [_restore_result(record) for record in results_data]
         
         # Generate report
         report = node.generate_compliance_report(
