@@ -55,6 +55,8 @@ def test_real_cli_round_trip_keeps_missing_trust_unverified(
     assert report["passed_events"] == 0
     assert report["indeterminate_events"] == 1
     assert report["integrity_score"] == 0
+    assert report["overall_score"] == record["compliance_score"]
+    assert report["result_adjustments"] == []
     assert record["message"] in "\n".join(report["issues"])
 
 
@@ -113,6 +115,12 @@ def test_saved_results_cannot_invent_success_for_absent_or_failed_checks(tmp_pat
     assert report["passed_events"] == 0
     assert report[status_field] == 1
     assert report["integrity_score"] == 0
+    assert report["overall_score"] == 0
+    adjustment = report["result_adjustments"][0]
+    assert adjustment["result_index"] == 0
+    assert adjustment["supplied"]["score_fields"] == {"score": record["score"]}
+    assert adjustment["supplied"]["status"] == record["status"]
+    assert adjustment["applied_compliance_score"] == 0
     if "timing_valid" not in record:
         assert report["timing_score"] == 0
 
@@ -125,7 +133,58 @@ def test_reload_preserves_explicit_null_false_and_diagnostics():
         warnings=["Synthetic warning"], details={"signature": {"status": "INDETERMINATE"}},
     )
     restored = cli._restore_result(json.loads(original.model_dump_json()))
+    assert restored.compliance_score == 0
+    for field in ("status", "signature_valid", "merkle_valid", "anchor_valid", "timing_valid",
+                  "error_code", "message", "warnings"):
+        assert getattr(restored, field) == getattr(original, field)
+    assert restored.details["signature"] == original.details["signature"]
+    source = restored.details["cli_report_restoration"]["supplied"]
+    assert source["compliance_score"] == 0.25
+    assert source["error_code"] == original.error_code
+    assert source["message"] == original.message
+
+
+def test_complete_partial_result_preserves_its_score_and_diagnostics():
+    original = VerificationResult(
+        status=VerificationStatus.INDETERMINATE, compliance_score=0.25,
+        signature_valid=False, merkle_valid=True, anchor_valid=False, timing_valid=False,
+        error_code="TEST_UNAVAILABLE", message="Synthetic source is unavailable",
+        warnings=["Synthetic warning"], details={"signature": {"status": "INDETERMINATE"}},
+    )
+    restored = cli._restore_result(json.loads(original.model_dump_json()))
     assert restored.model_dump() == original.model_dump()
+
+
+def test_downgrade_retains_original_error_message_and_prior_metadata():
+    source = {
+        "status": "PASSED", "score": 1, "error_code": "SOURCE_CODE", "message": "Source message",
+        "warnings": ["Source warning"],
+        "details": {"custom": "retained", "cli_report_restoration": {"prior": "retained"}},
+    }
+    restored = cli._restore_result(source)
+    assert restored.status == VerificationStatus.INDETERMINATE
+    assert restored.compliance_score == 0
+    assert restored.warnings == source["warnings"]
+    assert restored.details["custom"] == "retained"
+    provenance = restored.details["cli_report_restoration"]
+    assert provenance["supplied"]["error_code"] == "SOURCE_CODE"
+    assert provenance["supplied"]["message"] == "Source message"
+    assert provenance["previous_restoration"] == {"prior": "retained"}
+
+
+def test_aggregate_uses_zero_for_unsupported_record_only(tmp_path):
+    valid = {"status": "PASSED", "score": 1, **dict.fromkeys(cli._COMPONENT_FIELDS, True)}
+    saved = tmp_path / "mixed.json"
+    saved.write_text(json.dumps([valid, {"status": "INDETERMINATE", "score": 1}]))
+    process = run_cli("report", saved)
+    assert process.returncode == 0, process.stdout + process.stderr
+    report = json.loads(process.stdout)
+    assert report["overall_score"] == 0.5
+    assert report["passed_events"] == 1
+    assert report["indeterminate_events"] == 1
+    assert len(report["result_adjustments"]) == 1
+    assert report["result_adjustments"][0]["result_index"] == 1
+    assert report["result_adjustments"][0]["supplied"]["compliance_score"] == 1
 
 
 @pytest.mark.parametrize("value", ["true", "false", 1, 0, [], {}])
@@ -145,3 +204,5 @@ def test_complete_saved_positive_result_remains_a_local_positive_report(tmp_path
     assert report["passed_events"] == 1
     assert report["integrity_score"] == 1
     assert report["timing_score"] == 1
+    assert report["overall_score"] == 1
+    assert report["result_adjustments"] == []

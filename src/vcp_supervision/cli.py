@@ -120,7 +120,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
 _COMPONENT_FIELDS = ("signature_valid", "merkle_valid", "anchor_valid", "timing_valid")
 
 
-def _restore_result(record: Any) -> VerificationResult:
+def _restore_result(
+    record: Any, adjustments: list[dict[str, Any]] | None = None,
+) -> VerificationResult:
     """Restore saved results without promoting missing checks to success."""
     if not isinstance(record, dict):
         raise ValueError("Each saved result must be a JSON object")
@@ -132,16 +134,45 @@ def _restore_result(record: Any) -> VerificationResult:
         if value is not None and type(value) is not bool:
             raise ValueError(f"{field} must be a boolean or null")
     result = VerificationResult.model_validate(data)
+    supplied = {
+        "status": result.status.value,
+        "compliance_score": result.compliance_score,
+        "score_fields": {key: record[key] for key in ("score", "compliance_score") if key in record},
+        "error_code": result.error_code,
+        "message": result.message,
+    }
+    components = [getattr(result, field) for field in _COMPONENT_FIELDS]
+    missing_components = any(value is None for value in components)
+    conflicting_pass = result.status == VerificationStatus.PASSED and any(
+        value is False for value in components
+    )
     if result.status == VerificationStatus.PASSED:
-        components = [getattr(result, field) for field in _COMPONENT_FIELDS]
-        if any(value is False for value in components):
+        if conflicting_pass:
             result.status = VerificationStatus.FAILED
             result.error_code = "RESULT_CHECKS_CONFLICT"
             result.message = "Saved PASSED status conflicts with a failed component check"
-        elif any(value is None for value in components):
+        elif missing_components:
             result.status = VerificationStatus.INDETERMINATE
             result.error_code = "RESULT_CHECKS_INCOMPLETE"
             result.message = "Saved PASSED status lacks complete component results"
+    # An aggregate from incomplete or contradictory source results has no
+    # supported basis here. Do not change engine weights or invent a score.
+    if missing_components or conflicting_pass:
+        result.compliance_score = 0.0
+    if (result.status.value != supplied["status"]
+            or result.compliance_score != supplied["compliance_score"]):
+        restoration = {
+            "supplied": supplied,
+            "applied_status": result.status.value,
+            "applied_compliance_score": result.compliance_score,
+            "reason": ("Saved PASSED status conflicts with component evidence"
+                       if conflicting_pass else "Component evidence is incomplete"),
+        }
+        if "cli_report_restoration" in result.details:
+            restoration["previous_restoration"] = result.details["cli_report_restoration"]
+        result.details = {**result.details, "cli_report_restoration": restoration}
+        if adjustments is not None:
+            adjustments.append(restoration)
     return result
 
 
@@ -158,7 +189,11 @@ def cmd_report(args: argparse.Namespace) -> int:
         
         if not isinstance(results_data, list):
             raise ValueError("Saved verification results must be a JSON array")
-        results = [_restore_result(record) for record in results_data]
+        results, adjustments = [], []
+        for index, record in enumerate(results_data):
+            restored = []
+            results.append(_restore_result(record, restored))
+            adjustments.extend({"result_index": index, **item} for item in restored)
         
         # Generate report
         report = node.generate_compliance_report(
@@ -183,6 +218,7 @@ def cmd_report(args: argparse.Namespace) -> int:
             "pass_rate": report.pass_rate,
             "regulations_checked": report.regulations_checked,
             "issues": report.issues,
+            "result_adjustments": adjustments,
         }
         
         if args.output:
