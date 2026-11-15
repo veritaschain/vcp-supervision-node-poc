@@ -120,6 +120,14 @@ Send the key in `X-API-Key`. Grant `admin` only to a separate operator key when 
 
 A manifest must be supplied through `SupervisionNode(manifest=...)` or the engine before authorized-key checks can pass. Missing manifests and unregistered keys return `INDETERMINATE`; revoked, mismatched or invalid signatures remain `FAILED`. `require_manifest=False` requests only signature-math checks: successful math is reported as `signature_math_valid: true` with `INDETERMINATE`, never authorized success. Manifest provenance and secure distribution remain the caller's responsibility.
 
+Before signature verification, this PoC rejects noncanonical Ed25519 public-key
+encodings and all eight pure small-order points, including the identity key.
+Rejected keys return `FAILED` / `KEY_INVALID`, even if a matching manifest entry
+was configured or manifest checking was disabled. This local admission rule
+closes the identity-key forgery path; it does not adopt a VAP/VCP normative
+signature profile. Signed bytes, backend signature-equation and R/S checks are
+unchanged, and mixed-order public keys are not separately excluded by this guard.
+
 `INDETERMINATE` is a distinct serialized result and is counted separately in API summaries, reports and the dashboard. It never sets `is_compliant`, `signature_valid` or `anchor_valid` to true for an unavailable check. Consumers that enumerate statuses must handle this value as not verified. Explicit `NoAuth` startup emits a development-only warning; the sample YAML now sets the historical `auth_enabled` flag to true, but the explicit authentication scheme controls actual access.
 
 ### Running the Dashboard

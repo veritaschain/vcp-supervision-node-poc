@@ -20,6 +20,33 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
+# All eight pure small-order points have one of these five y coordinates.
+# This is local key admission hardening, not an adopted VCP signature profile.
+_ED25519_P = 2**255 - 19
+_ED25519_SMALL_ORDER_Y = {
+    0, 1, _ED25519_P - 1,
+    int.from_bytes(bytes.fromhex(
+        "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05"), "little"),
+    int.from_bytes(bytes.fromhex(
+        "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a"), "little"),
+}
+
+
+def _check_public_key(raw: bytes) -> None:
+    """Reject noncanonical and pure small-order public keys before verification.
+
+    Curve decoding and the signature equation remain the crypto backend's job.
+    This guard does not add a prime-subgroup restriction or a new R/S policy.
+    """
+    if len(raw) != 32:
+        raise ValueError("Ed25519 public key must contain exactly 32 bytes")
+    encoded = int.from_bytes(raw, "little")
+    y = encoded & (2**255 - 1)
+    if y >= _ED25519_P or (y in (1, _ED25519_P - 1) and encoded >> 255):
+        raise ValueError("noncanonical Ed25519 public key encoding")
+    if y in _ED25519_SMALL_ORDER_Y:
+        raise ValueError("small-order Ed25519 public key")
+
 
 class SignatureVerificationError(Exception):
     """Raised when signature verification fails."""
@@ -83,6 +110,7 @@ class SignatureVerifier:
             # Step 2: Decode the public key and signature
             public_key_bytes = base64.b64decode(event.signature.public_key, validate=True)
             signature_bytes = base64.b64decode(event.signature.value, validate=True)
+            _check_public_key(public_key_bytes)
             
             # Step 3: Verify the Ed25519 signature
             public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
