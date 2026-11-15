@@ -328,6 +328,16 @@ vcp-supervision verify events.json \
   --output results.json
 ```
 
+Exit codes describe the local verification outcome: **0** requires at least one
+event and every result to be `PASSED`; **1** means at least one result is `FAILED`;
+**2** means no failure was observed but verification is incomplete (`INDETERMINATE`,
+`WARNING`, `TIMEOUT`, or an empty event list). A failed result takes precedence
+over incomplete results. Input/operational errors also exit nonzero.
+
+Saved JSON retains each result's component flags (`true`, `false`, or `null`),
+messages, warnings, details and timing fields. `score` is retained as a legacy
+alias for `compliance_score`; it is not an independent compliance assessment.
+
 ### Generate Report
 
 ```bash
@@ -335,6 +345,29 @@ vcp-supervision report results.json \
   --jurisdiction EU \
   --output compliance_report.json
 ```
+
+The report command preserves saved component flags; missing flags stay unknown
+and never count as successful checks. A historical `PASSED` record without all
+component results becomes `INDETERMINATE`; a `PASSED` record containing a false
+component becomes `FAILED`, with an explanatory error. Older `score` fields are
+still accepted. Saved diagnostics are preserved rather than reconstructed.
+
+If any component flag is missing/null, or a saved `PASSED` claim conflicts with
+a false component, the restored `compliance_score` is conservatively **0** before
+aggregation. This avoids retaining an unsupported full aggregate score after a
+status downgrade; it does not change the engine's scoring weights. Complete,
+consistent saved results retain their original scores, including partial scores
+from an incomplete verification with explicit component outcomes.
+
+Every changed status/score preserves its supplied values and original error/message
+in `details.cli_report_restoration`. The generated report exposes these adjustments
+in `result_adjustments`, with a zero-based result index, reason and applied values.
+Existing detail fields and warnings are retained; pre-existing restoration metadata
+is retained under `previous_restoration` when a further adjustment is necessary.
+
+Report exit **0** means the report was generated. It does not verify the source
+file's authenticity or establish a passing verification/compliance result.
+Without `--output`, stdout contains the report JSON and diagnostics use stderr.
 
 ### Start Dashboard
 
