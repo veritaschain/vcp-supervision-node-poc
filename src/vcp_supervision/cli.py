@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,37 @@ from vcp_supervision.models import (
 )
 
 logger = structlog.get_logger(__name__)
+
+
+def _read_json(path: str) -> Any:
+    """Reject ambiguous or non-finite JSON before using evidence or results."""
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("Duplicate JSON object key")
+            result[key] = value
+        return result
+
+    def reject_constant(_value):
+        raise ValueError("Non-finite JSON number")
+
+    def finite_float(value):
+        parsed = float(value)
+        if not math.isfinite(parsed):
+            raise ValueError("JSON number overflows a finite float")
+        return parsed
+
+    with open(path, encoding="utf-8") as stream:
+        return json.load(stream, object_pairs_hook=unique_object,
+                         parse_constant=reject_constant, parse_float=finite_float)
+
+
+def _write_new_json(path: str, value: Any) -> None:
+    """Serialize first, then create a new file without truncating any path."""
+    rendered = json.dumps(value, indent=2, allow_nan=False) + "\n"
+    with open(path, "x", encoding="utf-8") as stream:
+        stream.write(rendered)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -53,8 +85,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     
     try:
         # Load events
-        with open(args.events) as f:
-            data = json.load(f)
+        data = _read_json(args.events)
         
         events_data = data if isinstance(data, list) else [data]
         
@@ -105,8 +136,12 @@ def cmd_verify(args: argparse.Namespace) -> int:
         
         # Output results if requested
         if args.output:
-            with open(args.output, "w") as f:
-                json.dump(results, f, indent=2)
+            try:
+                _write_new_json(args.output, results)
+            except (OSError, ValueError):
+                print("Could not create a new results file; existing files are not overwritten.",
+                      file=sys.stderr)
+                return 1 if failed else 2
             print(f"\nResults written to {args.output}")
         
         if failed:
@@ -184,8 +219,7 @@ def cmd_report(args: argparse.Namespace) -> int:
     
     try:
         # Load verification results
-        with open(args.results) as f:
-            results_data = json.load(f)
+        results_data = _read_json(args.results)
         
         if not isinstance(results_data, list):
             raise ValueError("Saved verification results must be a JSON array")
@@ -222,8 +256,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         }
         
         if args.output:
-            with open(args.output, "w") as f:
-                json.dump(report_dict, f, indent=2)
+            _write_new_json(args.output, report_dict)
             print(f"Report written to {args.output}")
         else:
             print(json.dumps(report_dict, indent=2))
@@ -355,7 +388,7 @@ def create_parser() -> argparse.ArgumentParser:
     verify_parser.add_argument(
         "-o", "--output",
         type=str,
-        help="Output file for results",
+        help="New output file for results; existing paths are never overwritten",
     )
     
     # Report command
@@ -377,7 +410,7 @@ def create_parser() -> argparse.ArgumentParser:
     report_parser.add_argument(
         "-o", "--output",
         type=str,
-        help="Output file for report",
+        help="New output file for report; existing paths are never overwritten",
     )
     
     # Dashboard command
@@ -430,7 +463,14 @@ def main() -> int:
     
     handler = commands.get(args.command)
     if handler:
-        return handler(args)
+        if args.command not in {"verify", "report"}:
+            return handler(args)
+        try:
+            return handler(args)
+        except (OSError, ValueError, TypeError, KeyError, RecursionError, OverflowError):
+            print("Command failed: check the input JSON, configuration, and new output path.",
+                  file=sys.stderr)
+            return 2
     
     parser.print_help()
     return 0
