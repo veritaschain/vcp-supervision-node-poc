@@ -90,13 +90,21 @@ node = SupervisionNode(config_path="config/default.yaml")
 # Verify a single VCP event with its proof
 result = node.verify_event(
     event=event_data,
-    merkle_proof=proof_data,
-    anchor_record=anchor_data
+    proof=proof_data,
+    anchor=anchor_data
 )
 
 print(f"Verification Status: {result.status}")  # PASSED, FAILED, INDETERMINATE, WARNING, TIMEOUT
-print(f"Compliance Score: {result.score}")
+print(f"Compliance Score: {result.compliance_score}")
 ```
+
+The three inputs above are parsed `VCPEvent`, `MerkleProof`, and `AnchorRecord`
+model instances. CLI `verify` and `report` commands reject duplicate JSON object
+keys, invalid UTF-8, and non-finite numbers, including overflowing exponents.
+Their `--output` option creates a new file only: an existing file, symlink,
+hard link, or input/configuration path is never overwritten. Choose a new output
+filename for each run. An input or output error returns a nonzero exit code;
+a known verification failure remains exit 1 if saving its result also fails.
 
 ### API and dashboard authentication
 
