@@ -33,7 +33,7 @@ The VCP Supervision Node is a first-party Proof of Concept (PoC) exploring regul
 | **Signature Verification** | Ed25519 digital signature validation | SEC Rule 17a-4, eIDAS |
 | **Merkle Proof Verification** | Merkle inclusion-proof checks | MiFID II Article 17 |
 | **External Anchor Checks** | Unimplemented paths reject evidence; see limitations above | eIDAS Article 42 |
-| **Timing Requirements Check** | Submitted clock-sync and precision metadata checks | EU RTS 25, CAT NMS |
+| **Timing Requirements Check** | Submitted clock-sync and precision metadata checks | EU clock-synchronisation rules (formerly RTS 25), CAT NMS |
 | **Batch Sequence Checks** | Failures propagate to returned per-event status | DORA, MiFID II |
 | **Incident Reporting Support** | DORA-aligned data preparation | DORA Article 19-23 |
 
@@ -220,7 +220,7 @@ This PoC is designed to align with requirements from 9 jurisdictions (design int
 
 | Jurisdiction | Key Regulations | Timestamp Precision | Retention |
 |-------------|-----------------|---------------------|-----------|
-| **EU** | MiFID II, RTS 25, DORA, AI Act | 100µs (HFT) | 5-10 years |
+| **EU** | MiFID II, Delegated Regulation (EU) 2025/1155 (formerly RTS 25), DORA, AI Act | 100µs (HFT) | 5-10 years |
 | **UK** | UK MiFID II, PS21/3, FCA MAR 7A | 100µs (HFT) | 5-7 years |
 | **US** | SEC 17a-4, CAT NMS, Reg SCI | 50ms-100µs | 3-6 years |
 | **Japan** | FIEA, Cabinet Office Ordinance 338 | ms recommended | 7-10 years |
@@ -384,7 +384,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ### Primary Regulatory Sources
 
-- [EU RTS 25 (Regulation 2017/574)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32017R0574)
+- [EU clock synchronisation — Delegated Regulation (EU) 2025/1155, Articles 11–16](https://eur-lex.europa.eu/eli/reg_del/2025/1155/oj). It replaced [RTS 25 (Delegated Regulation (EU) 2017/574)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32017R0574) on 2 March 2026. The timing thresholds and `RTS 25` labels in this PoC were written against RTS 25 and have not been re-checked against the replacement
 - [EU DORA (Regulation 2022/2554)](https://eur-lex.europa.eu/eli/reg/2022/2554/oj)
 - [EU AI Act (Regulation 2024/1689)](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
 - [SEC Rule 17a-4](https://www.sec.gov/files/rules/final/2022/34-96034.pdf)
